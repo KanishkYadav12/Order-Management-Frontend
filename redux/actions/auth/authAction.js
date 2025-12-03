@@ -23,18 +23,20 @@ export const login = (loginData) => async (dispatch) => {
 
     if (status === "success" && data) {
       // Set token from the nested data object
-      if (data.token) {
-        document.cookie = `authToken=${data.token}; path=/;`;
+      if (status === "success" && data) {
+        // ✅ Cookie is already set by backend via Set-Cookie header
+        // No need to manually set it here
+
+        dispatch(
+          authActions.loginSuccess({
+            id: data.id,
+            name: data.name,
+            role: data.role,
+            email: data.email,
+          })
+        );
+        return false;
       }
-      dispatch(
-        authActions.loginSuccess({
-          id: data.id,
-          name: data.name,
-          role: data.role,
-          email: data.email,
-        })
-      );
-      return false;
     } else {
       dispatch(authActions.loginFailure(message || "Login failed"));
       return false;
@@ -128,10 +130,21 @@ export const logout = () => async (dispatch) => {
   try {
     dispatch(authActions.logoutRequest());
 
-    // Clear auth token cookie
+    // Call backend logout to clear cookie server-side
+    try {
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/auth/logout`,
+        {},
+        { withCredentials: true }
+      );
+    } catch (error) {
+      console.error("Backend logout failed:", error);
+      // Continue with frontend cleanup even if backend fails
+    }
+
+    // Clear auth token cookie client-side
     document.cookie =
-      "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
+      "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure";
 
     // Clear local storage
     localStorage.clear();
@@ -139,8 +152,10 @@ export const logout = () => async (dispatch) => {
     // Clear Redux state
     dispatch(authActions.clearAuthState());
 
-    // Reload the page to ensure all states are cleared
+    // Dispatch logout success
     dispatch(authActions.logoutSuccess());
+
+    // Redirect to home page
     window.location.href = "/";
 
     return true;

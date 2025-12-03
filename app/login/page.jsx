@@ -36,18 +36,18 @@ const formSchema = z.object({
   role: z.enum(["hotelowner", "superadmin"]),
 });
 
-console.log("server URl", process.env.NEXT_PUBLIC_SERVER_URL)
+console.log("server URl", process.env.NEXT_PUBLIC_SERVER_URL);
 
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState("");
-  const {loading, handleLogin} = useLogin();
+  const { loading, handleLogin } = useLogin();
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const cookies = parseCookies();
-    if (cookies.authToken) {
-      // router.push('/dashboard');
+    if (cookies.token) {
+      router.push("/dashboard");
       return;
     }
   }, [router]);
@@ -62,7 +62,7 @@ export default function LoginPage() {
 
   const onSubmit = async (values) => {
     console.log("hook-login-req : ", values);
-    handleLogin(values)
+    handleLogin(values);
   };
 
   const togglePasswordVisibility = () => {
@@ -70,10 +70,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="flex items-center justify-center min-h-screen p-4 bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <Building2 className="mx-auto h-12 w-12 text-primary" />
+          <Building2 className="w-12 h-12 mx-auto text-primary" />
           <CardTitle className="text-3xl">Sign in</CardTitle>
           <p className="text-sm text-muted-foreground">
             Or{" "}
@@ -84,7 +84,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="mb-4 p-2 text-sm text-red-500 bg-red-50 rounded">
+            <div className="p-2 mb-4 text-sm text-red-500 rounded bg-red-50">
               {error}
             </div>
           )}
@@ -97,7 +97,11 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Email address</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="john@example.com" {...field} />
+                      <Input
+                        type="email"
+                        placeholder="john@example.com"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -111,23 +115,26 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                    <div className="relative">
-                      <Input type={showPassword ? "text" : "password"}
-                      placeholder="••••••••" {...field} />
-                           <Button
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          {...field}
+                        />
+                        <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                           onClick={togglePasswordVisibility}
                         >
                           {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-gray-500" />
+                            <EyeOff className="w-4 h-4 text-gray-500" />
                           ) : (
-                            <Eye className="h-4 w-4 text-gray-500" />
+                            <Eye className="w-4 h-4 text-gray-500" />
                           )}
                         </Button>
-                        </div>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -160,7 +167,6 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              
 
               <div className="text-right">
                 <Link
@@ -171,11 +177,7 @@ export default function LoginPage() {
                 </Link>
               </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading}
-              >
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Signing in..." : "Sign in"}
               </Button>
             </form>

@@ -10,16 +10,16 @@ export default function Home() {
   const router = useRouter();
   useEffect(() => {
     const cookies = parseCookies();
-    if (cookies.authToken) {J
-      router.push('/');
+    if (cookies.authToken) {
+      router.push("/");
     }
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="max-w-md w-full space-y-8 p-6">
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="w-full max-w-md p-6 space-y-8">
         <div className="text-center">
-          <Building2 className="mx-auto h-12 w-12 text-primary" />
+          <Building2 className="w-12 h-12 mx-auto text-primary" />
           <h1 className="mt-6 text-4xl font-bold text-gray-900">
             Hotel Management System
           </h1>
@@ -27,7 +27,7 @@ export default function Home() {
             Manage your hotel operations efficiently
           </p>
         </div>
-        
+
         <div className="flex flex-col space-y-4">
           <Link href="/login">
             <Button className="w-full" size="lg">

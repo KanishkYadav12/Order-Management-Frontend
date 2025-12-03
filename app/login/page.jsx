@@ -66,7 +66,7 @@ export default function LoginPage() {
 
     // ✅ Redirect after successful login
     if (success) {
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     }
   };
 

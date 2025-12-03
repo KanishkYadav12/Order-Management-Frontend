@@ -2,7 +2,6 @@ import { serverUrl } from "@/config/config";
 import { authActions } from "@/redux/slices/authSlice";
 import { getActionErrorMessage } from "@/utils";
 import axios from "axios";
-import axiosInstance from "@/utils/axiosInstance"; // 🔹 NEW
 
 const route = `${process.env.NEXT_PUBLIC_SERVER_URL}/auth`;
 
@@ -15,45 +14,35 @@ export const login = (loginData) => async (dispatch) => {
       headers: {
         "Content-Type": "application/json",
       },
-      withCredentials: true, // ✅ Allows backend to set cookie via Set-Cookie header
+      withCredentials: true,
     });
 
     const { status, message, data } = response.data;
     console.log("Login response:", response.data);
 
     if (status === "success" && data) {
-      // ✅ Store token from response for use in headers
+      // Set token from the nested data object
       if (data.token) {
-        localStorage.setItem("authToken", data.token);
-        console.log("✅ Token stored in localStorage");
-
-        // ✅ Also set cookie as fallback for middleware
-        document.cookie = `authToken=${data.token}; path=/; max-age=${
-          10 * 24 * 60 * 60
-        }; SameSite=Lax`;
-        console.log("✅ Token stored in cookie");
+        document.cookie = `authToken=${data.token}; path=/;`;
       }
-
       dispatch(
         authActions.loginSuccess({
           id: data.id,
           name: data.name,
           role: data.role,
           email: data.email,
-          token: data.token,
         })
       );
-
-      return true; // ✅ Return true on success
+      return false;
     } else {
       dispatch(authActions.loginFailure(message || "Login failed"));
-      return false; // ✅ Return false if status is not success
+      return false;
     }
   } catch (error) {
     console.log("Login error:", error.response?.data || error.message);
     const errorMessage = getActionErrorMessage(error);
     dispatch(authActions.loginFailure(errorMessage));
-    return false; // ✅ Return false on error
+    return false;
   }
 };
 
@@ -80,7 +69,6 @@ export const verifyEmail = (verifyEmailData) => async (dispatch) => {
     dispatch(authActions.verifyOTPFailure(errorMessage));
   }
 };
-
 export const resendOtp = (resendOtpData) => async (dispatch) => {
   console.log("action-resendOtp-req : ", resendOtpData);
   try {
@@ -108,7 +96,6 @@ export const resendOtp = (resendOtpData) => async (dispatch) => {
     dispatch(authActions.verifyOTPFailure(errorMessage));
   }
 };
-
 export const signup = (signupData) => async (dispatch) => {
   try {
     dispatch(authActions.signupRequest());
@@ -134,38 +121,40 @@ export const signup = (signupData) => async (dispatch) => {
   }
 };
 
+// export const logout = () => async (dispatch) => {
+//     try {
+//         dispatch(authActions.logoutRequest());
+
+//         // Remove auth cookie
+//         document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+//         dispatch(authActions.logoutSuccess());
+//         document.location.reload();
+//         return true;
+//     } catch (error) {
+//         console.error('Logout error:', error);
+//         const errorMessage = getActionErrorMessage(error);
+//         dispatch(authActions.logoutFailure(errorMessage));
+//         return false;
+//     }
+// };
+
 export const logout = () => async (dispatch) => {
   try {
     dispatch(authActions.logoutRequest());
 
-    // Call backend logout to clear cookie server-side
-    try {
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}/auth/logout`,
-        {},
-        { withCredentials: true }
-      );
-    } catch (error) {
-      console.error("Backend logout failed:", error);
-      // Continue with frontend cleanup even if backend fails
-    }
-
-    // Clear auth token cookie client-side
+    // Clear auth token cookie
     document.cookie =
-      "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure";
-    document.cookie =
-      "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure";
+      "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
+    // document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
 
     // Clear local storage
     localStorage.clear();
 
-    // Clear Redux state
-    dispatch(authActions.clearAuthState());
+    // Clear Redux state (optional, if you have a reset action)
+    dispatch(authActions.clearAuthState()); // Replace with your actual Redux reset action if needed
 
-    // Dispatch logout success
+    // Reload the page to ensure all states are cleared
     dispatch(authActions.logoutSuccess());
-
-    // Redirect to home page
     window.location.href = "/";
 
     return true;
@@ -194,7 +183,7 @@ export const forgotPassword = (forgotPasswordData) => async (dispatch) => {
     console.log("action-forgot-password-res", response);
     dispatch(authActions.forgotPasswordSuccess(response));
   } catch (error) {
-    console.log("action-forget-password-error", error.response?.data?.message);
+    console.log("action-forget-password-error", error.response.data.message);
     let errorMessage = getActionErrorMessage(error);
     dispatch(authActions.forgotPasswordFailure(errorMessage));
   }
@@ -219,7 +208,7 @@ export const resetPasswordWithOTP = (otpData) => async (dispatch) => {
   } catch (error) {
     console.log(
       "action-resetPasswordWIthOtp-error",
-      error.response?.data?.message
+      error.response.data.message
     );
     let errorMessage = getActionErrorMessage(error);
     dispatch(authActions.verifyOTPFailure(errorMessage));
@@ -231,14 +220,14 @@ export const changePassword = (data) => async (dispatch) => {
     console.log("action-change-password-data", data);
     dispatch(authActions.changePasswordRequest());
 
-    // 🔹 Use axiosInstance so Authorization header is auto-added
-    const response = await axiosInstance.post("/auth/change-password", data, {
+    const response = await axios.post(`${route}/change-password`, data, {
       headers: {
         "Content-Type": "application/json",
       },
+      withCredentials: true,
     });
 
-    dispatch(authActions.changePasswordSuccess(response.data));
+    dispatch(authActions.changePasswordSuccess(data));
   } catch (error) {
     console.log("error", error);
     let errorMessage = getActionErrorMessage(error);
@@ -251,15 +240,28 @@ export const getUser = () => async (dispatch) => {
     console.log("getUser req");
     dispatch(authActions.getUserRequest());
 
-    // 🔹 Use axiosInstance so Authorization header is auto-added
-    const response = await axiosInstance.get("/users/profile");
-
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_SERVER_URL}/users/profile`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
     const { status, message, data: responseData } = response.data;
     console.log("action-get-user-res:", responseData);
     dispatch(authActions.getUserSuccess(responseData));
   } catch (error) {
     console.log("error", error);
-    let errorMessage = getActionErrorMessage(error);
+    let errorMessage = "An error occurred";
+    if (error.response) {
+      errorMessage = error.response.data.message || "Server error";
+    } else if (error.request) {
+      errorMessage = "Network error";
+    } else {
+      errorMessage = error.message || "Unknown error";
+    }
     dispatch(authActions.getUserFailure(errorMessage));
   }
 };

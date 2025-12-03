@@ -9,7 +9,9 @@ export const useLogout = () => {
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const router = useRouter();
-  const { status: logoutStatus, error: logoutError } = useSelector((state) => state.auth.logout);
+  const { status: logoutStatus, error: logoutError } = useSelector(
+    (state) => state.auth.logout
+  );
   const { toast } = useToast();
 
   useEffect(() => {
@@ -17,7 +19,8 @@ export const useLogout = () => {
       setLoading(true);
     } else if (logoutStatus === "success") {
       setLoading(false);
-      document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie =
+        "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       router.push("/login");
       toast({
         title: "Success",

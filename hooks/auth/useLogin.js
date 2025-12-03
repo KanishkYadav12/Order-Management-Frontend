@@ -15,8 +15,9 @@ export const useLogin = () => {
 
   const { toast } = useToast();
 
-  const handleLogin = (loginData) => {
-    dispatch(login(loginData));
+  const handleLogin = async (loginData) => {
+    const success = await dispatch(login(loginData));
+    return success;
   };
 
   useEffect(() => {

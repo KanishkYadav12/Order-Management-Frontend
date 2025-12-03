@@ -62,7 +62,12 @@ export default function LoginPage() {
 
   const onSubmit = async (values) => {
     console.log("hook-login-req : ", values);
-    handleLogin(values);
+    const success = await handleLogin(values); // ✅ Get success status
+
+    // ✅ Redirect after successful login
+    if (success) {
+      router.push("/dashboard");
+    }
   };
 
   const togglePasswordVisibility = () => {

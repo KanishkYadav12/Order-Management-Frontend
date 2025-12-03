@@ -15,37 +15,35 @@ export const login = (loginData) => async (dispatch) => {
       headers: {
         "Content-Type": "application/json",
       },
-      withCredentials: true,
+      withCredentials: true, // ✅ Allows backend to set cookie via Set-Cookie header
     });
 
     const { status, message, data } = response.data;
     console.log("Login response:", response.data);
 
     if (status === "success" && data) {
-      // Set token from the nested data object
-      if (status === "success" && data) {
-        // ✅ Cookie is already set by backend via Set-Cookie header
-        // No need to manually set it here
+      // ✅ Backend has already set the 'token' cookie via Set-Cookie header
+      // No need to manually create cookies here
 
-        dispatch(
-          authActions.loginSuccess({
-            id: data.id,
-            name: data.name,
-            role: data.role,
-            email: data.email,
-          })
-        );
-        return false;
-      }
+      dispatch(
+        authActions.loginSuccess({
+          id: data.id,
+          name: data.name,
+          role: data.role,
+          email: data.email,
+        })
+      );
+
+      return true; // ✅ Return true on success
     } else {
       dispatch(authActions.loginFailure(message || "Login failed"));
-      return false;
+      return false; // ✅ Return false if status is not success
     }
   } catch (error) {
     console.log("Login error:", error.response?.data || error.message);
     const errorMessage = getActionErrorMessage(error);
     dispatch(authActions.loginFailure(errorMessage));
-    return false;
+    return false; // ✅ Return false on error
   }
 };
 

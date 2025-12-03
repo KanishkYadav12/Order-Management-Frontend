@@ -11,7 +11,7 @@ axiosInstance.interceptors.request.use(
     // Get token from cookie
     const token = document.cookie
       .split("; ")
-      .find((row) => row.startsWith("authToken="))
+      .find((row) => row.startsWith("token="))
       ?.split("=")[1];
 
     if (token) {

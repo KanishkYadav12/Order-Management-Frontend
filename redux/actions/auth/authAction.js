@@ -22,9 +22,9 @@ export const login = (loginData) => async (dispatch) => {
 
     if (status === "success" && data) {
       // Set token from the nested data object
-      if (data.token) {
-        document.cookie = `authToken=${data.token}; path=/;`;
-      }
+      // if (data.token) {
+      //   document.cookie = `authToken=${data.token}; path=/;`;
+      // }
       dispatch(
         authActions.loginSuccess({
           id: data.id,
@@ -243,9 +243,6 @@ export const getUser = () => async (dispatch) => {
     const response = await axios.get(
       `${process.env.NEXT_PUBLIC_SERVER_URL}/users/profile`,
       {
-        headers: {
-          "Content-Type": "application/json",
-        },
         withCredentials: true,
       }
     );

@@ -11,23 +11,31 @@ export const useFetchDashboard = () => {
     (state) => state.dashboard.getDashboard
   );
 
+  console.log("📊 useFetchDashboard - Current status:", status);
+  console.log("📊 useFetchDashboard - Current data:", data);
+  console.log("📊 useFetchDashboard - Current error:", error);
+
   // Fetch dashboard data on mount
   useEffect(() => {
+    console.log("📊 useFetchDashboard - Mounting, calling getDashboard");
     dispatch(getDashboard());
   }, [dispatch]);
 
   // Handle status changes
   useEffect(() => {
+    console.log("📊 useFetchDashboard - Status changed to:", status);
     if (status === "pending") {
       setLoading(true);
     } else if (status === "success") {
       setLoading(false);
+      console.log("✅ Dashboard data loaded successfully");
       dispatch(dashboardActions.clearDashboardStats());
     } else if (status === "failed") {
       setLoading(false);
+      console.log("❌ Dashboard data failed:", error);
       dispatch(dashboardActions.clearDashboardStats());
     }
-  }, [status, dispatch]);
+  }, [status, dispatch, error]);
 
   return { data, loading, error };
 };

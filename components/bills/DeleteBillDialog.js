@@ -10,15 +10,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Spinner } from "@/components/ui/spinner";
 
-export default function DeleteBillDialog({ open, onOpenChange, onConfirm , loading}) {
+export default function DeleteBillDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  loading,
+}) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Bill</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this bill? This action cannot be undone.
+            Are you sure you want to delete this bill? This action cannot be
+            undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -27,10 +34,48 @@ export default function DeleteBillDialog({ open, onOpenChange, onConfirm , loadi
             onClick={onConfirm}
             className="bg-red-500 hover:bg-red-600"
           >
-            {loading  ? <Spinner/> :  "Delete"}
+            {loading ? <Spinner /> : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
+
+// "use client";
+
+// import {
+//   AlertDialog,
+//   AlertDialogAction,
+//   AlertDialogCancel,
+//   AlertDialogContent,
+//   AlertDialogDescription,
+//   AlertDialogFooter,
+//   AlertDialogHeader,
+//   AlertDialogTitle,
+// } from "@/components/ui/alert-dialog";
+
+// export default function DeleteBillDialog({ open, onOpenChange, onConfirm , loading}) {
+//   return (
+//     <AlertDialog open={open} onOpenChange={
+//       onOpenChange}>
+//       <AlertDialogContent>
+//         <AlertDialogHeader>
+//           <AlertDialogTitle>Delete Bill</AlertDialogTitle>
+//           <AlertDialogDescription>
+//             Are you sure you want to delete this bill? This action cannot be undone.
+//           </AlertDialogDescription>
+//         </AlertDialogHeader>
+//         <AlertDialogFooter>
+//           <AlertDialogCancel>Cancel</AlertDialogCancel>
+//           <AlertDialogAction
+//             onClick={onConfirm}
+//             className="bg-red-500 hover:bg-red-600"
+//           >
+//             {loading  ? <Spinner/> :  "Delete"}
+//           </AlertDialogAction>
+//         </AlertDialogFooter>
+//       </AlertDialogContent>
+//     </AlertDialog>
+//   );
+// }

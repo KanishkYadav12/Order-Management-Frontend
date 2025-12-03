@@ -8,24 +8,40 @@ const axiosInstance = axios.create({
 // Add token to every request
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Get token from authToken cookie (backend sets this during login)
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("authToken="))
-      ?.split("=")[1];
+    // Try to get token from multiple sources
+    let token = null;
 
-    console.log(
-      "🔑 axiosInstance - Token from cookie:",
-      token ? "✅ Found" : "❌ NOT Found"
-    );
+    // 1. Check localStorage first (most reliable)
+    try {
+      token = localStorage.getItem("authToken");
+      if (token) {
+        console.log("🔑 Token from localStorage: ✅ Found");
+      }
+    } catch (e) {
+      console.log("⚠️ localStorage not available");
+    }
+
+    // 2. Fallback to cookie if localStorage doesn't have it
+    if (!token) {
+      token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("authToken="))
+        ?.split("=")[1];
+      if (token) {
+        console.log("🔑 Token from cookie: ✅ Found");
+      }
+    }
+
     console.log("📍 Request URL:", config.url);
-    console.log("📦 Cookies:", document.cookie);
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log("✅ Authorization header set");
+      console.log(
+        "✅ Authorization header set:",
+        token.substring(0, 20) + "..."
+      );
     } else {
-      console.log("❌ No token - Authorization header NOT set");
+      console.log("❌ No token found - request will fail");
     }
 
     return config;

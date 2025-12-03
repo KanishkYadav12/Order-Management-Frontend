@@ -22,8 +22,17 @@ export const login = (loginData) => async (dispatch) => {
     console.log("Login response:", response.data);
 
     if (status === "success" && data) {
-      // ✅ Backend has already set the 'token' cookie via Set-Cookie header
-      // No need to manually create cookies here
+      // ✅ Store token from response for use in headers
+      if (data.token) {
+        localStorage.setItem("authToken", data.token);
+        console.log("✅ Token stored in localStorage");
+
+        // ✅ Also set cookie as fallback for middleware
+        document.cookie = `authToken=${data.token}; path=/; max-age=${
+          10 * 24 * 60 * 60
+        }; SameSite=Lax`;
+        console.log("✅ Token stored in cookie");
+      }
 
       dispatch(
         authActions.loginSuccess({
@@ -31,6 +40,7 @@ export const login = (loginData) => async (dispatch) => {
           name: data.name,
           role: data.role,
           email: data.email,
+          token: data.token,
         })
       );
 

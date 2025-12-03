@@ -40,6 +40,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState("");
   const { loading, handleLogin } = useLogin();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -69,12 +70,24 @@ export default function LoginPage() {
     // ✅ Redirect after successful login
     if (success) {
       console.log("Redirecting to dashboard...");
-      // Small delay to ensure cookie is set
+      toast({
+        title: "Success",
+        description: "Login successful! Redirecting to dashboard...",
+        variant: "default",
+      });
+      // Small delay to ensure token is stored
       setTimeout(() => {
         router.push("/dashboard");
       }, 500);
     } else {
-      setError("Login failed. Please check your credentials and try again.");
+      const errorMsg =
+        "Login failed. Please check your credentials and try again.";
+      setError(errorMsg);
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
     }
   };
 

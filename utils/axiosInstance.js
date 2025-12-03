@@ -14,8 +14,18 @@ axiosInstance.interceptors.request.use(
       .find((row) => row.startsWith("authToken="))
       ?.split("=")[1];
 
+    console.log(
+      "🔑 axiosInstance - Token from cookie:",
+      token ? "✅ Found" : "❌ NOT Found"
+    );
+    console.log("📍 Request URL:", config.url);
+    console.log("📦 Cookies:", document.cookie);
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log("✅ Authorization header set");
+    } else {
+      console.log("❌ No token - Authorization header NOT set");
     }
 
     return config;

@@ -9,10 +9,25 @@ export const useLogin = () => {
   const handleLogin = async (loginData) => {
     setLoading(true);
     try {
-      const success = await dispatch(login(loginData));
+      // Wrap dispatch in a promise to ensure it completes
+      const result = await new Promise((resolve) => {
+        const action = login(loginData);
+        const promiseResult = dispatch(action);
+
+        // If it's a promise (thunk), wait for it
+        if (promiseResult && typeof promiseResult.then === "function") {
+          promiseResult.then(resolve).catch(() => resolve(false));
+        } else {
+          // Otherwise resolve immediately
+          resolve(promiseResult);
+        }
+      });
+
       setLoading(false);
-      return success;
+      console.log("Login success:", result);
+      return result;
     } catch (error) {
+      console.error("Login error:", error);
       setLoading(false);
       return false;
     }

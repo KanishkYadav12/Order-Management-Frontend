@@ -64,9 +64,15 @@ export default function LoginPage() {
     setError(""); // Clear previous errors
     const success = await handleLogin(values); // ✅ Get success status
 
+    console.log("onSubmit - Login success:", success);
+
     // ✅ Redirect after successful login
     if (success) {
-      router.push("/dashboard");
+      console.log("Redirecting to dashboard...");
+      // Small delay to ensure cookie is set
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 500);
     } else {
       setError("Login failed. Please check your credentials and try again.");
     }

@@ -142,6 +142,8 @@ export const logout = () => async (dispatch) => {
 
     // Clear auth token cookie client-side
     document.cookie =
+      "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure";
+    document.cookie =
       "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure";
 
     // Clear local storage

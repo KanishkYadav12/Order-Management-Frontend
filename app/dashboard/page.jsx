@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, IndianRupee, UserCheck, TrendingUp } from "lucide-react";
 import DashboardCharts from "@/components/dashboard/DashboardCharts";
@@ -8,32 +8,22 @@ import { useFetchDashboard } from "@/hooks/dashboard/useFetchDashboard";
 import DashboardLoading from "./loading";
 
 export default function DashboardPage() {
-  const { data, loading } = useFetchDashboard();
-  const [customers, setCustomers] = useState(data?.customers);
-  const [revenue, setRevenue] = useState(data?.revenue);
-  const [customersByDate, setCustomersByDate] = useState(data?.customersByDate);
-  const [revenueByDate, setRevenueByDate] = useState(data?.revenueByDate);
-  const [thisMonthDishes, setThisMonthDishes] = useState(data?.thisMonthDishes);
-
-  useEffect(() => {
-    if (!loading && data) {
-      setCustomers(data?.customers);
-      setRevenue(data?.revenue);
-      setCustomersByDate(data?.customersByDate);
-      setRevenueByDate(data?.revenueByDate);
-      setThisMonthDishes(data?.thisMonthDishes);
-    }
-  });
+  const { data, loading, error } = useFetchDashboard();
 
   return (
-    <div className=" lg:p-6">
+    <div className="lg:p-6">
       {loading ? (
         <DashboardLoading />
+      ) : error ? (
+        <div className="p-4 text-red-500 rounded bg-red-50">
+          <p className="font-semibold">Error Loading Dashboard</p>
+          <p className="text-sm">{error}</p>
+        </div>
       ) : (
         <>
           {/* Dashboard Header */}
           <div className="flex flex-wrap items-center justify-between mb-6">
-            <h1 className="text-xl font-bold  lg:text-3xl">Dashboard</h1>
+            <h1 className="text-xl font-bold lg:text-3xl">Dashboard</h1>
             <div className="p-2 mt-4 rounded-full bg-primary/10 sm:mt-0">
               <TrendingUp className="w-8 h-8 text-primary" />
             </div>
@@ -49,40 +39,46 @@ export default function DashboardPage() {
                 </CardTitle>
                 <Users className="w-4 h-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent className="py-2  lg:py-4">
-                <div className="text-2xl font-bold">{customers?.today}</div>
+              <CardContent className="py-2 lg:py-4">
+                <div className="text-2xl font-bold">
+                  {data?.customers?.today || 0}
+                </div>
               </CardContent>
             </Card>
 
             {/* Today's Revenue Card */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between py-2 pb-2 space-y-0 ">
+              <CardHeader className="flex flex-row items-center justify-between py-2 pb-2 space-y-0">
                 <CardTitle className="text-sm font-medium">
                   Today's Revenue
                 </CardTitle>
                 <IndianRupee className="w-4 h-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent className="py-2  lg:py-4">
-                <div className="text-2xl font-bold">₹{revenue?.today}</div>
+              <CardContent className="py-2 lg:py-4">
+                <div className="text-2xl font-bold">
+                  ₹{data?.revenue?.today || 0}
+                </div>
               </CardContent>
             </Card>
 
             {/* Monthly Customers Card */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between py-2 pb-2 space-y-0 ">
+              <CardHeader className="flex flex-row items-center justify-between py-2 pb-2 space-y-0">
                 <CardTitle className="text-sm font-medium">
                   Monthly Customers
                 </CardTitle>
                 <UserCheck className="w-4 h-4 text-muted-foreground" />
               </CardHeader>
               <CardContent className="py-2 lg:py-4">
-                <div className="text-2xl font-bold">{customers?.monthly}</div>
+                <div className="text-2xl font-bold">
+                  {data?.customers?.monthly || 0}
+                </div>
               </CardContent>
             </Card>
 
             {/* Monthly Revenue Card */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between py-2 pb-2 space-y-0 ">
+              <CardHeader className="flex flex-row items-center justify-between py-2 pb-2 space-y-0">
                 <CardTitle className="text-sm font-medium">
                   Monthly Revenue
                 </CardTitle>
@@ -91,19 +87,26 @@ export default function DashboardPage() {
                 </div>
               </CardHeader>
               <CardContent className="py-2 lg:py-4">
-                <div className="text-2xl font-bold">₹{revenue?.monthly}</div>
+                <div className="text-2xl font-bold">
+                  ₹{data?.revenue?.monthly || 0}
+                </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Dashboard Charts */}
           <div className="mt-4">
-            <DashboardCharts data={{ revenueByDate, customersByDate }} />
+            <DashboardCharts
+              data={{
+                revenueByDate: data?.revenueByDate,
+                customersByDate: data?.customersByDate,
+              }}
+            />
           </div>
 
           {/* Top Dishes */}
           <div className="mt-4">
-            <TopDishesCard data={thisMonthDishes} />
+            <TopDishesCard data={data?.thisMonthDishes} />
           </div>
         </>
       )}

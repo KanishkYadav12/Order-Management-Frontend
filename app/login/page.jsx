@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +9,6 @@ import Link from "next/link";
 import { Building2, Eye, EyeOff } from "lucide-react";
 import { parseCookies } from "nookies";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -28,7 +27,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLogin } from "@/hooks/auth";
-import { parseCookie } from "next/dist/compiled/@edge-runtime/cookies";
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -46,7 +44,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const cookies = parseCookies();
-    if (cookies.token) {
+    if (cookies.authToken) {
       router.push("/dashboard");
       return;
     }
@@ -57,16 +55,20 @@ export default function LoginPage() {
     defaultValues: {
       email: "",
       password: "",
+      role: "hotelowner",
     },
   });
 
   const onSubmit = async (values) => {
     console.log("hook-login-req : ", values);
+    setError(""); // Clear previous errors
     const success = await handleLogin(values); // ✅ Get success status
 
     // ✅ Redirect after successful login
     if (success) {
-      window.location.href = "/dashboard";
+      router.push("/dashboard");
+    } else {
+      setError("Login failed. Please check your credentials and try again.");
     }
   };
 

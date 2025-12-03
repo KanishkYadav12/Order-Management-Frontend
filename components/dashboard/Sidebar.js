@@ -23,16 +23,14 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { loading: logoutLoading, handleLogout } = useLogout();
-  
- 
 
   const sidebarContent = (
     <>
       {/* Sidebar Header */}
-      <div className=" mt-12 flex items-center h-16 px-4 border-b">
+      <div className="flex items-center h-16 px-4 mt-12 border-b ">
         <div className="flex items-center gap-3">
-          <Building2 className="h-8 w-8 text-primary" />
-          <span className="font-semibold text-xl">Admin Panel</span>
+          <Building2 className="w-8 h-8 text-primary" />
+          <span className="text-xl font-semibold">Admin Panel</span>
         </div>
         <Button
           variant="ghost"
@@ -40,22 +38,22 @@ export default function Sidebar() {
           className="ml-auto md:hidden"
           onClick={() => setIsMobileOpen(false)}
         >
-          <X className="h-5 w-5" />
+          <X className="w-5 h-5" />
         </Button>
       </div>
 
       {/* Sidebar Navigation */}
-      <SidebarNav  pathname={pathname} />
+      <SidebarNav pathname={pathname} />
 
       {/* Logout Button */}
-      <div className="mt-auto border-t p-4">
+      <div className="p-4 mt-auto border-t">
         <Button
           variant="ghost"
-          className="w-full justify-start gap-2"
+          className="justify-start w-full gap-2"
           onClick={handleLogout}
           disabled={logoutLoading}
         >
-          <LogOut className="h-5 w-5" />
+          <LogOut className="w-5 h-5" />
           <span>{logoutLoading ? "Logging out..." : "Logout"}</span>
         </Button>
       </div>
@@ -68,10 +66,10 @@ export default function Sidebar() {
       <Button
         variant="ghost"
         size="icon"
-        className="fixed top-4 left-4 z-50 md:hidden"
+        className="fixed z-50 top-4 left-4 md:hidden"
         onClick={() => setIsMobileOpen(true)}
       >
-        <Menu className="h-6 w-6" />
+        <Menu className="w-6 h-6" />
       </Button>
 
       {/* Mobile Overlay */}
@@ -94,7 +92,7 @@ export default function Sidebar() {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex flex-col fixed top-0 left-0 h-full w-72 bg-white border-r shadow-sm">
+      <div className="fixed top-0 left-0 flex-col hidden h-full bg-white border-r shadow-sm md:flex w-72">
         {sidebarContent}
       </div>
     </>

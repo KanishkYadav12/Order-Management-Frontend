@@ -1,36 +1,59 @@
-import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import { authActions } from "@/redux/slices/authSlice";
 import { login } from "@/redux/actions/auth";
+import { useToast } from "@/hooks/use-toast";
 
 export const useLogin = () => {
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
+  const router = useRouter();
+  const { toast } = useToast();
 
-  const handleLogin = async (loginData) => {
-    setLoading(true);
-    try {
-      // Wrap dispatch in a promise to ensure it completes
-      const result = await new Promise((resolve) => {
-        const action = login(loginData);
-        const promiseResult = dispatch(action);
+  const { data, status, error } = useSelector(
+    (state) => state.auth.authDetails
+  );
 
-        // If it's a promise (thunk), wait for it
-        if (promiseResult && typeof promiseResult.then === "function") {
-          promiseResult.then(resolve).catch(() => resolve(false));
-        } else {
-          // Otherwise resolve immediately
-          resolve(promiseResult);
-        }
+  useEffect(() => {
+    if (status === "pending") {
+      setLoading(true);
+    } else if (status === "success") {
+      setLoading(false);
+      toast({
+        title: "Success",
+        description: "Login successful! Redirecting...",
+        variant: "success",
       });
-
+      if (authActions.checkAuthSuccess) {
+        dispatch(authActions.checkAuthSuccess(data));
+      }
+      if (data?.role === "superadmin") {
+        router.push("/admin-dashboard");
+      } else {
+        router.push("/dashboard");
+      }
+      if (authActions.clearAuthDetailsStatus) {
+        dispatch(authActions.clearAuthDetailsStatus());
+      }
+    } else if (status === "failed") {
       setLoading(false);
-      console.log("Login success:", result);
-      return result;
-    } catch (error) {
-      console.error("Login error:", error);
-      setLoading(false);
-      return false;
+      toast({
+        title: "Error",
+        description: error || "Incorrect credentials!",
+        variant: "destructive",
+      });
+      if (authActions.clearAuthDetailsStatus) {
+        dispatch(authActions.clearAuthDetailsStatus());
+      }
+      if (authActions.clearAuthDetailsError) {
+        dispatch(authActions.clearAuthDetailsError());
+      }
     }
+  }, [status, error, data, dispatch, router, toast]);
+
+  const handleLogin = (values) => {
+    dispatch(login(values));
   };
 
   return { loading, handleLogin };

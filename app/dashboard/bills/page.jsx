@@ -13,7 +13,10 @@ import { Button } from "@/components/ui/button";
 
 export default function BillsPage() {
   const [refresh, setRefresh] = useState(false);
-  const { bills, loading: billsLoading } = useGetAllBills({refresh, setRefresh});
+  const { bills, loading: billsLoading } = useGetAllBills({
+    refresh,
+    setRefresh,
+  });
   const [selectedBill, setSelectedBill] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filteredBills, setFilteredBills] = useState(bills);
@@ -65,19 +68,18 @@ export default function BillsPage() {
             Manage and view all bill information
           </p>
         </div>
-        <Building2 className="h-8 w-8 text-primary" />
+        <Building2 className="w-8 h-8 text-primary" />
       </div>
       <div>
-        <div className="flex gap-2 justify-between">
-      <DateFilter onFilterChange={handleFilterChange} />
-      <Button  variant="default" onClick={() => setRefresh(true)}>
-          {refresh ? <Spinner className="animate-spin" /> : ""}
-          <RotateCw/>
-        </Button>
+        <div className="flex justify-between gap-2">
+          <DateFilter onFilterChange={handleFilterChange} />
+          <Button variant="default" onClick={() => setRefresh(true)}>
+            {refresh ? <Spinner className="animate-spin" /> : ""}
+            <RotateCw />
+          </Button>
         </div>
       </div>
 
-       
       {billsLoading ? (
         <Spinner />
       ) : (

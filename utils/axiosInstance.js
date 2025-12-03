@@ -8,10 +8,10 @@ const axiosInstance = axios.create({
 // Add token to every request
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Get token from cookie
+    // Get token from authToken cookie (backend sets this during login)
     const token = document.cookie
       .split("; ")
-      .find((row) => row.startsWith("token="))
+      .find((row) => row.startsWith("authToken="))
       ?.split("=")[1];
 
     if (token) {

@@ -68,33 +68,8 @@ export default function LoginPage() {
 
   const onSubmit = async (values) => {
     console.log("hook-login-req : ", values);
-    setError(""); // Clear previous errors
-    const success = await handleLogin(values); // ✅ Get success status
-
-    console.log("onSubmit - Login success:", success);
-
-    // ✅ Redirect after successful login
-    if (success) {
-      console.log("Redirecting to dashboard...");
-      toast({
-        title: "Success",
-        description: "Login successful! Redirecting to dashboard...",
-        variant: "default",
-      });
-      // Small delay to ensure token is stored
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 500);
-    } else {
-      const errorMsg =
-        "Login failed. Please check your credentials and try again.";
-      setError(errorMsg);
-      toast({
-        title: "Error",
-        description: errorMsg,
-        variant: "destructive",
-      });
-    }
+    setError("");
+    handleLogin(values);
   };
 
   const togglePasswordVisibility = () => {

@@ -1,25 +1,22 @@
-import axios from "axios";
+import api from "@/lib/api";
 import { orderActions } from "@/redux/slices/orderSlice";
-import { getActionErrorMessage } from "@/utils";
 import { tableActions } from "@/redux/slices/tableSlice";
+import { getActionErrorMessage } from "@/utils";
 
-// Action to get order details
+// Get order details
 export const getOrderDetails = (orderId) => async (dispatch) => {
   console.log("action-get-order-details-req:", orderId);
   try {
     dispatch(orderActions.getOrderDetailsRequest());
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/orders/${orderId}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      }
-    );
+
+    const response = await api.get(`/orders/${orderId}`, {
+      headers: { "Content-Type": "application/json" },
+      withCredentials: true,
+    });
 
     const { status, message, data } = response.data;
     console.log("action-get-order-details-res:", data);
+
     if (status === "success") {
       dispatch(orderActions.getOrderDetailsSuccess(data));
     } else {
@@ -32,23 +29,20 @@ export const getOrderDetails = (orderId) => async (dispatch) => {
   }
 };
 
-// Action to get all orders
+// Get all orders
 export const getAllOrders = () => async (dispatch) => {
   console.log("action-get-all-orders-req:");
   try {
     dispatch(orderActions.getAllOrdersRequest());
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/orders`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      }
-    );
+
+    const response = await api.get("/orders", {
+      headers: { "Content-Type": "application/json" },
+      withCredentials: true,
+    });
 
     const { status, message, data } = response.data;
     console.log("action-get-all-orders-res:", data);
+
     if (status === "success") {
       dispatch(orderActions.getAllOrdersSuccess(data.orders));
     } else {
@@ -61,23 +55,20 @@ export const getAllOrders = () => async (dispatch) => {
   }
 };
 
-// Table Orders
+// Get table orders
 export const getTableOrders = (tableId) => async (dispatch) => {
   console.log("action-get-table-orders-req:");
   try {
     dispatch(orderActions.getTableOrdersRequest());
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/orders/table/${tableId}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      }
-    );
+
+    const response = await api.get(`/orders/table/${tableId}`, {
+      headers: { "Content-Type": "application/json" },
+      withCredentials: true,
+    });
 
     const { status, message, data } = response.data;
     console.log("action-get-table-orders-res:", data);
+
     if (status === "success") {
       dispatch(orderActions.getTableOrderSuccess(data.orders));
     } else {
@@ -90,24 +81,20 @@ export const getTableOrders = (tableId) => async (dispatch) => {
   }
 };
 
-// Action to update an order
+// Update order
 export const updateOrder = (orderId, orderData) => async (dispatch) => {
   console.log("action-update-order-req:", orderId);
   try {
     dispatch(orderActions.updateOrderRequest());
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/orders/owner/${orderId}`,
-      orderData,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      }
-    );
+
+    const response = await api.put(`/orders/owner/${orderId}`, orderData, {
+      headers: { "Content-Type": "application/json" },
+      withCredentials: true,
+    });
 
     const { status, message, data } = response.data;
     console.log("action-update-order-res:", data);
+
     if (status === "success") {
       dispatch(orderActions.updateOrderSuccess(data));
     } else {
@@ -120,24 +107,24 @@ export const updateOrder = (orderId, orderData) => async (dispatch) => {
   }
 };
 
-//update order action
+// Update order status
 export const updateOrderStatus = (orderId, newStatus) => async (dispatch) => {
   console.log("action-update-order-status-req:", orderId);
   try {
     dispatch(orderActions.updateOrderStatusRequest());
-    const response = await axios.patch(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/orders/${orderId}/${newStatus}`,
+
+    const response = await api.patch(
+      `/orders/${orderId}/${newStatus}`,
       {},
       {
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         withCredentials: true,
       }
     );
 
     const { status, message, data } = response.data;
     console.log("action-update-order-status-res:", data);
+
     if (status === "success") {
       dispatch(orderActions.updateOrderStatusSuccess(data));
     } else {
@@ -150,26 +137,22 @@ export const updateOrderStatus = (orderId, newStatus) => async (dispatch) => {
   }
 };
 
-// Action to create a new order
+// Create new order
 export const createOrder =
   (orderData, hotelId, tableId) => async (dispatch) => {
     console.log("action-create-order-req:", orderData, hotelId, tableId);
     try {
       dispatch(orderActions.createOrderRequest());
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}/orders/${tableId}`,
-        orderData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+
+      const response = await api.post(`/orders/${tableId}`, orderData, {
+        headers: { "Content-Type": "application/json" },
+        withCredentials: true,
+      });
 
       const { status, message, data } = response.data;
       console.log("action-create-order-res:", data);
-      if (status == "success") {
+
+      if (status === "success") {
         dispatch(orderActions.createOrderSuccess(data));
         if (data.table) dispatch(tableActions.insertUpdatedTable(data.table));
       } else {
@@ -182,29 +165,24 @@ export const createOrder =
     }
   };
 
-// Action to delete an order
+// Delete order
 export const deleteOrder = (orderId) => async (dispatch) => {
   console.log("action-delete-order-req:", orderId);
   try {
     dispatch(orderActions.deleteOrderRequest());
-    const response = await axios.delete(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/orders/${orderId}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      }
-    );
+
+    const response = await api.delete(`/orders/${orderId}`, {
+      headers: { "Content-Type": "application/json" },
+      withCredentials: true,
+    });
 
     const { status, message, data } = response.data;
     console.log("action-delete-order-res:", data);
 
-    // if while deleting we are getting table
-
     if (status === "success") {
-      if (data.table != null)
+      if (data.table) {
         dispatch(tableActions.insertUpdatedTable(data.table));
+      }
       dispatch(orderActions.deleteOrderSuccess(data));
     } else {
       dispatch(orderActions.deleteOrderFailure(message));

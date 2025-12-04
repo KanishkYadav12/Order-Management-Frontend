@@ -1,21 +1,18 @@
-import axios from "axios";
+// redux/actions/dashboardActions.js (update import)
+import api from "@/lib/api";
 import { dashboardActions } from "@/redux/slices/dashboardSlice";
 import { getActionErrorMessage } from "@/utils";
 
-// Action to get dashboard
 export const getDashboard = () => async (dispatch) => {
   console.log("action-get-dashboard-req:");
   try {
     dispatch(dashboardActions.getDashboardRequest());
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/dashboard`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      }
-    );
+    const response = await api.get("/dashboard", {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      // withCredentials: true, // keep if you still use cookies; for Authorization header flow it's not needed
+    });
 
     const { status, message, data } = response.data;
     console.log("action-get-dashboard-res:", data);

@@ -1,19 +1,26 @@
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { parseCookies } from "nookies";
 import Link from "next/link";
 import { Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSelector } from "react-redux";
 
 export default function Home() {
   const router = useRouter();
+
+  // Read token from Redux (preferred) and fallback to localStorage for reloads
+  const reduxToken = useSelector((state) => state?.auth?.authDetails?.token);
+  const getLocalToken = () =>
+    typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+
   useEffect(() => {
-    const cookies = parseCookies();
-    if (cookies.authToken) {
-      router.push("/");
+    const token = reduxToken || getLocalToken();
+    if (token) {
+      // If authenticated, redirect to dashboard
+      router.push("/dashboard");
     }
-  }, [router]);
+  }, [router, reduxToken]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">

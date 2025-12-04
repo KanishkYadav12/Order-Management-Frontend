@@ -19,14 +19,18 @@ export const useLogout = () => {
       setLoading(true);
     } else if (logoutStatus === "success") {
       setLoading(false);
-      document.cookie =
-        "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      router.push("/login");
+
+      // NOTE:
+      // Your logout action already does a full-page redirect:
+      // window.location.href = '/'
+      // So we do NOT call router.push here to avoid duplicate navigation.
       toast({
         title: "Success",
         description: "Logged out successfully.",
         variant: "success",
       });
+
+      // Clear the logout status so the hook can be reused later
       dispatch(authActions.clearLogoutStatus());
     } else if (logoutStatus === "failed") {
       setLoading(false);

@@ -16,23 +16,21 @@ import { QrReducer } from "./slices/qrSlice.js";
 import { hotelReducer } from "./slices/hotelSlice.js";
 
 export const store = configureStore({
-    reducer: {
-        auth: authReducer,
-        dashboard: dashboardReducer,
-        owner: ownerReducer,
-        ingredient: ingredientReducer,
-        category: categoryReducer,
-        dish: dishReducer,
-        table: tableReducer,
-        offer: offerReducer,
-        system: systemReducer,
-        order: orderReducer,
-        connection: connectionReducer,
-        upload: uploadReducer,
-        bill: billReducer,
-        qr : QrReducer,
-        hotel : hotelReducer
-    }
-})
-
-
+  reducer: {
+    auth: authReducer,
+    dashboard: dashboardReducer,
+    owner: ownerReducer,
+    ingredient: ingredientReducer,
+    category: categoryReducer,
+    dish: dishReducer,
+    table: tableReducer,
+    offer: offerReducer,
+    system: systemReducer,
+    order: orderReducer,
+    connection: connectionReducer,
+    upload: uploadReducer,
+    bill: billReducer,
+    qr: QrReducer,
+    hotel: hotelReducer,
+  },
+});

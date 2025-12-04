@@ -2,44 +2,70 @@ import { serverUrl } from "@/config/config";
 import { authActions } from "@/redux/slices/authSlice";
 import { getActionErrorMessage } from "@/utils";
 import axios from "axios";
+import api from "@/lib/api";
 
 const route = `${process.env.NEXT_PUBLIC_SERVER_URL}/auth`;
 
 export const login = (loginData) => async (dispatch) => {
   try {
     dispatch(authActions.loginRequest());
-    console.log("Login request to:", `${route}/login`);
+    console.log("🔐 ========== LOGIN ACTION ==========");
+    console.log(
+      "🔐 Login request to:",
+      `${process.env.NEXT_PUBLIC_SERVER_URL}/auth/login`
+    );
 
-    const response = await axios.post(`${route}/login`, loginData, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      withCredentials: true,
+    const response = await api.post("/auth/login", loginData, {
+      headers: { "Content-Type": "application/json" },
     });
 
     const { status, message, data } = response.data;
-    console.log("Login response:", response.data);
+    console.log("✅ Login response:", response.data);
 
     if (status === "success" && data) {
-      // Set token from the nested data object
-      // if (data.token) {
-      //   document.cookie = `authToken=${data.token}; path=/;`;
-      // }
+      const token = data.token ?? data.accessToken ?? null;
+
+      console.log(
+        "🔑 Token from backend:",
+        token ? `${token.substring(0, 30)}...` : "❌ NO TOKEN"
+      );
+
+      if (typeof window !== "undefined" && token) {
+        localStorage.setItem("accessToken", token);
+        const savedToken = localStorage.getItem("accessToken");
+        console.log(
+          "💾 Token saved to localStorage:",
+          savedToken ? "✅ YES" : "❌ NO"
+        );
+      }
+
       dispatch(
         authActions.loginSuccess({
           id: data.id,
           name: data.name,
           role: data.role,
           email: data.email,
+          token,
         })
       );
-      return false;
+
+      console.log("✅ loginSuccess dispatched with token");
+
+      // Verify it's in Redux
+      const state = store.getState();
+      console.log(
+        "📦 Token in Redux after dispatch:",
+        state?.auth?.authDetails?.token ? "✅ YES" : "❌ NO"
+      );
+      console.log("🔐 ===================================");
+
+      return true;
     } else {
       dispatch(authActions.loginFailure(message || "Login failed"));
       return false;
     }
   } catch (error) {
-    console.log("Login error:", error.response?.data || error.message);
+    console.log("❌ Login error:", error.response?.data || error.message);
     const errorMessage = getActionErrorMessage(error);
     dispatch(authActions.loginFailure(errorMessage));
     return false;
@@ -69,6 +95,7 @@ export const verifyEmail = (verifyEmailData) => async (dispatch) => {
     dispatch(authActions.verifyOTPFailure(errorMessage));
   }
 };
+
 export const resendOtp = (resendOtpData) => async (dispatch) => {
   console.log("action-resendOtp-req : ", resendOtpData);
   try {
@@ -96,6 +123,7 @@ export const resendOtp = (resendOtpData) => async (dispatch) => {
     dispatch(authActions.verifyOTPFailure(errorMessage));
   }
 };
+
 export const signup = (signupData) => async (dispatch) => {
   try {
     dispatch(authActions.signupRequest());
@@ -121,32 +149,9 @@ export const signup = (signupData) => async (dispatch) => {
   }
 };
 
-// export const logout = () => async (dispatch) => {
-//     try {
-//         dispatch(authActions.logoutRequest());
-
-//         // Remove auth cookie
-//         document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-//         dispatch(authActions.logoutSuccess());
-//         document.location.reload();
-//         return true;
-//     } catch (error) {
-//         console.error('Logout error:', error);
-//         const errorMessage = getActionErrorMessage(error);
-//         dispatch(authActions.logoutFailure(errorMessage));
-//         return false;
-//     }
-// };
-
 export const logout = () => async (dispatch) => {
   try {
     dispatch(authActions.logoutRequest());
-
-    // Clear auth token cookie
-    document.cookie =
-      "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
-    // document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
-
     // Clear local storage
     localStorage.clear();
 
@@ -237,28 +242,22 @@ export const changePassword = (data) => async (dispatch) => {
 
 export const getUser = () => async (dispatch) => {
   try {
-    console.log("getUser req");
+    console.log(
+      "getUser request to:",
+      `${process.env.NEXT_PUBLIC_SERVER_URL}/users/profile`
+    );
     dispatch(authActions.getUserRequest());
 
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/users/profile`,
-      {
-        withCredentials: true,
-      }
-    );
+    const response = await api.get("/users/profile");
+
     const { status, message, data: responseData } = response.data;
     console.log("action-get-user-res:", responseData);
     dispatch(authActions.getUserSuccess(responseData));
   } catch (error) {
-    console.log("error", error);
-    let errorMessage = "An error occurred";
-    if (error.response) {
-      errorMessage = error.response.data.message || "Server error";
-    } else if (error.request) {
-      errorMessage = "Network error";
-    } else {
-      errorMessage = error.message || "Unknown error";
-    }
+    console.log("getUser error:", error.response?.data || error.message);
+    console.log("Full error:", error); // See full error details
+
+    const errorMessage = getActionErrorMessage(error); // Use your existing helper
     dispatch(authActions.getUserFailure(errorMessage));
   }
 };

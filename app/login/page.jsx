@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Link from "next/link";
 import { Building2, Eye, EyeOff } from "lucide-react";
-import { parseCookies } from "nookies";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -27,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLogin } from "@/hooks/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useSelector } from "react-redux";
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -43,13 +43,19 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
 
+  // read token from redux
+  const reduxToken = useSelector((state) => state?.auth?.authDetails?.token);
+
+  // fallback to localStorage token for reload cases
+  const getLocalToken = () =>
+    typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+
   useEffect(() => {
-    const cookies = parseCookies();
-    if (cookies.authToken) {
+    const token = reduxToken || getLocalToken();
+    if (token) {
       router.push("/dashboard");
-      return;
     }
-  }, [router]);
+  }, [router, reduxToken]);
 
   const form = useForm({
     resolver: zodResolver(formSchema),

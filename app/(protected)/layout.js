@@ -1,17 +1,26 @@
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { parseCookies } from "nookies";
+import { useSelector } from "react-redux";
 
 export default function ProtectedLayout({ children }) {
   const router = useRouter();
 
+  // Read token from Redux
+  const reduxToken = useSelector((state) => state?.auth?.authDetails?.token);
+
+  // Fallback to localStorage for reloads
+  const getLocalToken = () =>
+    typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+
   useEffect(() => {
-    const cookies = parseCookies();
-    if (!cookies.authToken) {
-      router.push('/login');
+    const token = reduxToken || getLocalToken();
+
+    // Not logged in → redirect
+    if (!token) {
+      router.push("/login");
     }
-  }, [router]);
+  }, [router, reduxToken]);
 
   return <>{children}</>;
-} 
+}

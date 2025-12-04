@@ -7,6 +7,7 @@ const initialState = {
     data: null,
     currentUser: null,
     isAuthenticated: false,
+    token: null, // <-- ADDED: stores access token (kept minimal)
   },
   signup: {
     status: null,
@@ -60,6 +61,11 @@ const authSlice = createSlice({
       state.authDetails.currentUser = action.payload;
       state.authDetails.isAuthenticated = true;
       state.authDetails.error = null;
+
+      // <-- ADDED: read token from payload and store in authDetails.token
+      // Accept either { token } or { accessToken } in the payload.
+      state.authDetails.token =
+        action.payload?.token ?? action.payload?.accessToken ?? null;
     },
     loginFailure: (state, action) => {
       state.authDetails.status = "failed";
@@ -91,6 +97,9 @@ const authSlice = createSlice({
       state.signup = initialState.signup;
       state.verifyOTP = initialState.verifyOTP;
       state.forgotPassword = initialState.forgotPassword;
+
+      // <-- ADDED: ensure token is cleared on logout
+      state.authDetails.token = null;
     },
     logoutFailure: (state, action) => {
       state.logout.status = "failed";
@@ -128,6 +137,9 @@ const authSlice = createSlice({
     clearCurrentUser: (state) => {
       state.authDetails.currentUser = null;
       state.authDetails.isAuthenticated = false;
+
+      // <-- ADDED: clear token when clearing current user
+      state.authDetails.token = null;
     },
 
     // Verify OTP actions

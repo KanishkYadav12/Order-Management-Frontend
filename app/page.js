@@ -27,11 +27,9 @@ export default function Home() {
       <div className="w-full max-w-md p-6 space-y-8">
         <div className="text-center">
           <Building2 className="w-12 h-12 mx-auto text-primary" />
-          <h1 className="mt-6 text-4xl font-bold text-gray-900">
-            Hotel Management System
-          </h1>
+          <h1 className="mt-6 text-4xl font-bold text-gray-900">QR-Dine</h1>
           <p className="mt-2 text-lg text-gray-600">
-            Manage your hotel operations efficiently
+            Contactless Ordering System{" "}
           </p>
         </div>
 

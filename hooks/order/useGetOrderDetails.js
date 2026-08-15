@@ -23,11 +23,6 @@ export const useGetOrderDetails = (orderId) => {
       setLoading(true);
     } else if (status === "success") {
       setLoading(false);
-      toast({
-        title: "Success",
-        description: "Order details fetched successfully",
-        variant: "success",
-      });
     } else if (status === "failed") {
       setLoading(false);
       toast({

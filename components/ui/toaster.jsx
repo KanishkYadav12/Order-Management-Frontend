@@ -1,6 +1,7 @@
-"use client"
+"use client";
 
-import { useToast } from "@/hooks/use-toast"
+import { CheckCircle2, AlertCircle, AlertTriangle, Info } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import {
   Toast,
   ToastClose,
@@ -8,28 +9,50 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from "@/components/ui/toast"
+} from "@/components/ui/toast";
+import { cn } from "@/lib/utils";
+
+/**
+ * An icon per variant, so the meaning of a message doesn't rest on the colour
+ * of a 4px rail alone.
+ */
+const ICONS = {
+  success: { Icon: CheckCircle2, tone: "text-success" },
+  destructive: { Icon: AlertCircle, tone: "text-destructive" },
+  warning: { Icon: AlertTriangle, tone: "text-warning" },
+  info: { Icon: Info, tone: "text-info" },
+  default: { Icon: Info, tone: "text-muted-foreground" },
+};
 
 export function Toaster() {
-  const { toasts } = useToast()
+  const { toasts } = useToast();
 
   return (
-    (<ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
+    <ToastProvider swipeDirection="right" duration={4000}>
+      {toasts.map(({ id, title, description, action, variant, ...props }) => {
+        const { Icon, tone } = ICONS[variant] ?? ICONS.default;
+
         return (
-          (<Toast key={id}variant="default" {...props}>
-            <div className="grid gap-1">
+          // `variant` is forwarded so the card gets its status rail. The old
+          // Toaster hardcoded variant="default" here, which meant every
+          // toast() call's variant was thrown away.
+          <Toast key={id} variant={variant} {...props}>
+            <Icon
+              className={cn("mt-0.5 h-4 w-4 shrink-0", tone)}
+              aria-hidden="true"
+            />
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               {title && <ToastTitle>{title}</ToastTitle>}
               {description && (
                 <ToastDescription>{description}</ToastDescription>
               )}
+              {action}
             </div>
-            {action}
             <ToastClose />
-          </Toast>)
+          </Toast>
         );
       })}
       <ToastViewport />
-    </ToastProvider>)
+    </ToastProvider>
   );
 }

@@ -44,11 +44,6 @@ export const useGetAllOrders = (type="order", params = {}) => {
                 setLoading(false);
                 if (setRefresh) setRefresh(false);
                 if (refresh) {
-                    toast({
-                        title: "Success",
-                        description: "Orders fetched successfully.",
-                        variant: "success",
-                    });
                 }
                 dispatch(orderActions.clearGetAllOrdersStatus());
                 dispatch(orderActions.clearGetAllOrdersError());

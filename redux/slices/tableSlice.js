@@ -96,6 +96,41 @@ const tableSlice = createSlice({
             state.getAllTables.error = action.payload;
         },
 
+        /**
+         * Marks a table occupied when its first order arrives over realtime.
+         *
+         * The Ably handler already dispatched this action, but no reducer of
+         * this name existed — so every incoming order threw
+         * "updateTableOnFirstOrder is not a function" and the floor plan
+         * never updated live.
+         */
+        updateTableOnFirstOrder: (state, action) => {
+            const order = action.payload;
+            const tableId = order?.tableId?._id ?? order?.tableId;
+            if (!tableId || !state.getAllTables.data?.tables) return;
+
+            state.getAllTables.data.tables = state.getAllTables.data.tables.map(
+                (table) =>
+                    table._id === tableId
+                        ? {
+                              ...table,
+                              status: "occupied",
+                              customer: order.customerId ?? table.customer,
+                          }
+                        : table
+            );
+        },
+
+        /** Applies a table snapshot pushed by the server after any change. */
+        setTable: (state, action) => {
+            const incoming = action.payload;
+            if (!incoming?._id || !state.getAllTables.data?.tables) return;
+
+            state.getAllTables.data.tables = state.getAllTables.data.tables.map(
+                (table) => (table._id === incoming._id ? incoming : table)
+            );
+        },
+
         // updateTable
         updateTableRequest: (state) => {
             state.updateTable.status = "pending";

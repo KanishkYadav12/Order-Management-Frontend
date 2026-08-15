@@ -14,11 +14,6 @@ export const useFetchAllHotels = () => {
             setLoading(true);
         } else if (status === "success") {
             setLoading(false);
-            toast({
-                title: "Success",
-                description: "All Hotels fetched successfully.",
-                variant: "success",
-            });
         } else if (status === "failed") {
             setLoading(false);
             toast({

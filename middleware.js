@@ -1,20 +1,32 @@
-// middleware.js
 import { NextResponse } from "next/server";
 
-export function middleware(request) {
-  // No auth checks in edge middleware — client handles auth (localStorage/Redux).
-  return NextResponse.next();
+/**
+ * Edge middleware.
+ *
+ * Authentication is enforced by the API on every request and by
+ * `ProtectedRoute` in the client, which now blocks render until the session
+ * resolves. The refresh token is an httpOnly cookie scoped to `/api/v1/auth`,
+ * so the edge cannot read it and cannot make a trustworthy auth decision here
+ * — a middleware check would be theatre.
+ *
+ * What it does do is add the security headers that belong on the document
+ * response rather than on API responses.
+ */
+export function middleware() {
+  const response = NextResponse.next();
+
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(self), microphone=(), geolocation=()"
+  );
+
+  return response;
 }
 
 export const config = {
-  matcher: [
-    "/",
-    "/dashboard/:path*",
-    "/login",
-    "/signup",
-    "/forgot-password",
-    "/verify-email",
-    "/settings/:path*",
-    "/profile/:path*",
-  ],
+  // Everything except Next's own assets and static files.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)"],
 };

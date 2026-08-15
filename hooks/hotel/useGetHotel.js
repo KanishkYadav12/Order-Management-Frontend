@@ -39,11 +39,6 @@ export const useGetHotel = (hotelId) => {
     } else if (status === "success") {
       setLoading(false);
       // setRefresh && setRefresh(false);
-      toast({
-        title: "Success",
-        description: "hotel fetched successfully.",
-        variant: "success",
-      });
       dispatch(hotelActions.clearGetHotelStatus());
       dispatch(hotelActions.clearGetHotelError());
     } else if (status === "failed") {

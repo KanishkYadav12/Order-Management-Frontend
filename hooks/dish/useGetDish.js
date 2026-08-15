@@ -29,11 +29,6 @@ export const useGetDish = (dishId) => {
         } else if (status === "success") {
             setLoading(false);
             // setRefresh && setRefresh(false);
-            toast({
-                title: "Success",
-                description: "dish fetched successfully.",
-                variant: "success",
-            });
             dispatch(dishActions.clearGetDishStatus());
             dispatch(dishActions.clearGetDishError());
         } else if (status === "failed") {

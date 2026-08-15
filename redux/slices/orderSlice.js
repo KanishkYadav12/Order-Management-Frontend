@@ -1,5 +1,27 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { updateOrderStatus } from "../actions/order";
+
+/** The kitchen board's columns, in service order. */
+const BUCKETS = ["draft", "pending", "preparing", "ready", "completed"];
+
+/**
+ * Guarantees every column exists before it is read or written.
+ *
+ * Several reducers assumed `getAllOrders.data` was already shaped and threw
+ * on a cold store; this makes that impossible.
+ */
+const ensureBuckets = (state) => {
+  if (!state.getAllOrders.data) {
+    state.getAllOrders.data = Object.fromEntries(
+      BUCKETS.map((bucket) => [bucket, []])
+    );
+    return;
+  }
+  for (const bucket of BUCKETS) {
+    if (!Array.isArray(state.getAllOrders.data[bucket])) {
+      state.getAllOrders.data[bucket] = [];
+    }
+  }
+};
 
 const initialOrder = {
   orderDetails: {
@@ -158,33 +180,23 @@ const orderSlice = createSlice({
       state.getAllOrders.status = "pending";
     },
     getAllOrdersSuccess: (state, action) => {
-      // orderActions.checkAndPrepareOrder();
       state.getAllOrders.status = "success";
+      ensureBuckets(state);
 
-      if (!state.getAllOrders.data) {
-        state.getAllOrders.data = {
-          draft: [],
-          pending: [],
-          preparing: [],
-          completed: [],
-        };
+      const allOrders = Array.isArray(action.payload) ? action.payload : [];
+
+      // Bucketed in one pass rather than five filters over the same array,
+      // and `ready` is now carried through — the API emits it and the old
+      // split silently dropped those orders off the board entirely.
+      const grouped = Object.fromEntries(BUCKETS.map((b) => [b, []]));
+      for (const order of allOrders) {
+        if (grouped[order.status]) grouped[order.status].push(order);
       }
-      const allOrders = action.payload;
-      state.getAllOrders.data.draft = allOrders
-        .filter((order) => order.status == "draft")
-        .reverse();
-      state.getAllOrders.data.pending = allOrders
-        .filter((order) => order.status == "pending")
-        .reverse();
-      state.getAllOrders.data.preparing = allOrders
-        .filter((order) => order.status == "preparing")
-        .reverse();
-      state.getAllOrders.data.completed = allOrders
-        .filter((order) => order.status == "completed")
-        .reverse();
-      if (state.getAllOrders?.data?.pending?.length > -1) {
-        state.pendingOrderCount = state.getAllOrders?.data?.pending?.length;
+
+      for (const bucket of BUCKETS) {
+        state.getAllOrders.data[bucket] = grouped[bucket].reverse();
       }
+      state.pendingOrderCount = state.getAllOrders.data.pending.length;
     },
     getAllOrdersFailure: (state, action) => {
       state.getAllOrders.status = "failed";
@@ -192,42 +204,66 @@ const orderSlice = createSlice({
     },
 
     checkAndPrepareOrder: (state) => {
-      if (!state.getAllOrders.data) {
-        state.getAllOrders.data = {
-          draft: [],
-          pending: [],
-          preparing: [],
-          completed: [],
-        };
-      }
+      ensureBuckets(state);
     },
 
     setNewOrder: (state, action) => {
       const newOrder = action.payload;
-      console.log("new Order in action-------", newOrder);
-      if (!state.getAllOrders.data) {
-        state.getAllOrders.data = {
-          draft: [],
-          pending: [],
-          preparing: [],
-          completed: [],
-        };
-      }
+      if (!newOrder?._id) return;
+
+      ensureBuckets(state);
+
       const existsInPending = state.getAllOrders.data.pending.some(
         (order) => order._id.toString() === newOrder._id.toString()
       );
       if (!existsInPending) {
         state.getAllOrders.data.pending.unshift(newOrder);
-        // state.getAllOrders.status = 'success';
       }
-      if (state.getAllOrders?.data?.pending?.length > -1) {
-        state.pendingOrderCount = state.getAllOrders?.data?.pending?.length;
-      }
+      state.pendingOrderCount = state.getAllOrders.data.pending.length;
     },
 
+    /**
+     * Drops an order from every column.
+     *
+     * Needed by the realtime `delete-order` handler, which previously had no
+     * reducer to call and left a cancelled order sitting on the board.
+     */
+    removeOrder: (state, action) => {
+      const orderId = String(action.payload ?? "");
+      if (!orderId) return;
+
+      ensureBuckets(state);
+
+      for (const bucket of BUCKETS) {
+        state.getAllOrders.data[bucket] = state.getAllOrders.data[
+          bucket
+        ].filter((order) => order._id.toString() !== orderId);
+      }
+      state.pendingOrderCount = state.getAllOrders.data.pending.length;
+    },
+
+    /**
+     * Replaces the board wholesale from a realtime sync.
+     *
+     * This wrote to `state.orders.data`, a key that does not exist on this
+     * slice, so the handler threw the moment an `order-update` message
+     * arrived.
+     */
     syncOrders: (state, action) => {
-      state.orders.data = action.payload;
-      state.orders.status = "success";
+      ensureBuckets(state);
+      const incoming = action.payload ?? {};
+
+      state.getAllOrders.data.pending =
+        incoming.new ?? incoming.pending ?? state.getAllOrders.data.pending;
+      state.getAllOrders.data.preparing =
+        incoming.inProgress ??
+        incoming.preparing ??
+        state.getAllOrders.data.preparing;
+      state.getAllOrders.data.completed =
+        incoming.completed ?? state.getAllOrders.data.completed;
+
+      state.getAllOrders.status = "success";
+      state.pendingOrderCount = state.getAllOrders.data.pending.length;
     },
 
     updateOrderStatusRequest: (state) => {

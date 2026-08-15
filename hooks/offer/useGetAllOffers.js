@@ -30,11 +30,6 @@ export const useGetAllOffers = (type = "offer") => {
         } else if (status === "success") {
             setLoading(false);
             setRefresh && setRefresh(false);
-            toast({
-                title: "Success",
-                description: "Offers fetched successfully.",
-                variant: "success",
-            });
             dispatch(offerActions.clearGetAllOffersStatus());
             dispatch(offerActions.clearGetAllOffersError());
         } else if (status === "failed") {

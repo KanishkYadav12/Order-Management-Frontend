@@ -1,41 +1,38 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getDashboard } from "@/redux/actions/dashboard";
-import { dashboardActions } from "@/redux/slices/dashboardSlice";
 
-export const useFetchDashboard = () => {
-  const [loading, setLoading] = useState(true);
+/**
+ * Loads dashboard analytics.
+ *
+ * The previous version cleared the request status on success, which reset it
+ * to `null` — so `loading` could never settle correctly and the seven console
+ * statements it printed on every render were the only way to tell what was
+ * happening.
+ */
+export const useFetchDashboard = (range = {}) => {
   const dispatch = useDispatch();
-
   const { status, error, data } = useSelector(
     (state) => state.dashboard.getDashboard
   );
 
-  console.log("📊 useFetchDashboard - Current status:", status);
-  console.log("📊 useFetchDashboard - Current data:", data);
-  console.log("📊 useFetchDashboard - Current error:", error);
+  const { from, to } = range;
 
-  // Fetch dashboard data on mount
+  const refetch = useCallback(() => {
+    dispatch(getDashboard({ from, to }));
+  }, [dispatch, from, to]);
+
   useEffect(() => {
-    console.log("📊 useFetchDashboard - Mounting, calling getDashboard");
-    dispatch(getDashboard());
-  }, [dispatch]);
+    refetch();
+  }, [refetch]);
 
-  // Handle status changes
-  useEffect(() => {
-    console.log("📊 useFetchDashboard - Status changed to:", status);
-    if (status === "pending") {
-      setLoading(true);
-    } else if (status === "success") {
-      setLoading(false);
-      console.log("✅ Dashboard data loaded successfully");
-      dispatch(dashboardActions.clearDashboardStats());
-    } else if (status === "failed") {
-      setLoading(false);
-      console.log("❌ Dashboard data failed:", error);
-      dispatch(dashboardActions.clearDashboardStats());
-    }
-  }, [status, dispatch, error]);
-
-  return { data, loading, error };
+  return {
+    data,
+    error,
+    // `null` means "not started yet", which is still a loading state to the UI.
+    loading: status === "pending" || status === null,
+    refetch,
+  };
 };
+
+export default useFetchDashboard;

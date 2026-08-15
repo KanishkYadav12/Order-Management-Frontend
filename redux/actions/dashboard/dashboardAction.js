@@ -1,29 +1,25 @@
-// redux/actions/dashboardActions.js (update import)
-import api from "@/lib/api";
+import api, { getErrorMessage } from "@/lib/api";
 import { dashboardActions } from "@/redux/slices/dashboardSlice";
-import { getActionErrorMessage } from "@/utils";
 
-export const getDashboard = () => async (dispatch) => {
-  console.log("action-get-dashboard-req:");
-  try {
-    dispatch(dashboardActions.getDashboardRequest());
-    const response = await api.get("/dashboard", {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      // withCredentials: true, // keep if you still use cookies; for Authorization header flow it's not needed
-    });
+export const getDashboard =
+  ({ from, to } = {}) =>
+  async (dispatch) => {
+    try {
+      dispatch(dashboardActions.getDashboardRequest());
 
-    const { status, message, data } = response.data;
-    console.log("action-get-dashboard-res:", data);
-    if (status === "success") {
-      dispatch(dashboardActions.getDashboardSuccess(data));
-    } else {
-      dispatch(dashboardActions.getDashboardFailure(message));
+      const { data } = await api.get("/dashboard", {
+        params: {
+          ...(from ? { from } : {}),
+          ...(to ? { to } : {}),
+        },
+      });
+
+      dispatch(dashboardActions.getDashboardSuccess(data?.data));
+      return { ok: true, data: data?.data };
+    } catch (error) {
+      dispatch(dashboardActions.getDashboardFailure(getErrorMessage(error)));
+      return { ok: false };
     }
-  } catch (error) {
-    console.log("action-get-dashboard-error:", error);
-    const errorMessage = getActionErrorMessage(error);
-    dispatch(dashboardActions.getDashboardFailure(errorMessage));
-  }
-};
+  };
+
+export default getDashboard;

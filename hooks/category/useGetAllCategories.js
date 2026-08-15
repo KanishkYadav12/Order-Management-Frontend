@@ -30,11 +30,6 @@ export const useGetAllCategories = (type="category") => {
         } else if (status === "success") {
             setLoading(false);
             setRefresh && setRefresh(false);
-            toast({
-                title: "Success",
-                description: "Categories fetched successfully.",
-                variant: "success",
-            });
             dispatch(categoryActions.clearGetAllCategoriesStatus());
             dispatch(categoryActions.clearGetAllCategoriesError());
         } else if (status === "failed") {

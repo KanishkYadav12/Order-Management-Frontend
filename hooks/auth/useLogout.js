@@ -1,51 +1,40 @@
-import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState } from "react";
+import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
-import { authActions } from "@/redux/slices/authSlice";
-import { logout } from "@/redux/actions/auth";
+import { logout } from "@/redux/actions/auth/authAction";
 import { useToast } from "@/hooks/use-toast";
 
+/**
+ * Signs the user out.
+ *
+ * The old flow called `localStorage.clear()` and then
+ * `window.location.href = "/"`, which wiped unrelated keys and forced a full
+ * page reload. It also never told the server, so the refresh token stayed
+ * valid for its whole 30-day life. This revokes the session server-side and
+ * navigates client-side.
+ */
 export const useLogout = () => {
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const router = useRouter();
-  const { status: logoutStatus, error: logoutError } = useSelector(
-    (state) => state.auth.logout
-  );
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (logoutStatus === "pending") {
-      setLoading(true);
-    } else if (logoutStatus === "success") {
-      setLoading(false);
+  const handleLogout = async ({ allDevices = false } = {}) => {
+    setLoading(true);
+    await dispatch(logout({ allDevices }));
+    setLoading(false);
 
-      // NOTE:
-      // Your logout action already does a full-page redirect:
-      // window.location.href = '/'
-      // So we do NOT call router.push here to avoid duplicate navigation.
-      toast({
-        title: "Success",
-        description: "Logged out successfully.",
-        variant: "success",
-      });
+    toast({
+      title: "Signed out",
+      description: allDevices
+        ? "You've been signed out on every device."
+        : "See you next time.",
+    });
 
-      // Clear the logout status so the hook can be reused later
-      dispatch(authActions.clearLogoutStatus());
-    } else if (logoutStatus === "failed") {
-      setLoading(false);
-      toast({
-        title: "Error",
-        description: logoutError || "Failed to logout.",
-        variant: "destructive",
-      });
-      dispatch(authActions.clearLogoutStatus());
-    }
-  }, [logoutStatus, logoutError, dispatch, router, toast]);
-
-  const handleLogout = () => {
-    dispatch(logout());
+    router.replace("/login");
   };
 
   return { loading, handleLogout };
 };
+
+export default useLogout;

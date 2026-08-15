@@ -30,12 +30,7 @@
 //             if (setRefresh) {
 //                 setRefresh(false);
 //             }
-//             toast({
-//                 title: "Success",
-//                 description: "Tables fetched successfully.",
-//                 variant: "success",
-//             });
-//             dispatch(tableActions.clearGetAllTablesStatus());
+////             dispatch(tableActions.clearGetAllTablesStatus());
 //             dispatch(tableActions.clearGetAllTablesError());
 //         } else if (status === "failed") {
 //             setLoading(false);
@@ -102,11 +97,6 @@ export const useGetAllTables = (params = {}) => {
     } else if (status === "success") {
       timeout = setTimeout(() => {
         setLoading(false);
-        toast({
-          title: "Success",
-          description: "Tables fetched successfully.",
-          variant: "success",
-        });
         dispatch(tableActions.clearGetAllTablesStatus());
         dispatch(tableActions.clearGetAllTablesError());
       }, 0);

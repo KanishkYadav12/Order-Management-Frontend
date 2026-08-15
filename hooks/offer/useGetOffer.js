@@ -27,11 +27,6 @@ export const useGetOffer = (offerId) => {
             setLoading(true);
         } else if (status === "success") {
             setLoading(false);
-            toast({
-                title: "Success",
-                description: "Offers fetched successfully.",
-                variant: "success",
-            });
             dispatch(offerActions.clearGetOfferError());
             dispatch(offerActions.clearGetOfferStatus());
         } else if (status === "failed") {

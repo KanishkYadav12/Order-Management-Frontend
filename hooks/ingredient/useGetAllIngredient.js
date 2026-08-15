@@ -30,11 +30,6 @@ export const useGetAllIngredients = (type="ingredient") => {
         } else if (status === "success") {
             setLoading(false);
             setRefresh && setRefresh(false);
-            toast({
-                title: "Success",
-                description: "Ingredients fetched successfully.",
-                variant: "success",
-            });
             dispatch(ingredientActions.clearGetAllIngredientsStatus());
             dispatch(ingredientActions.clearGetAllIngredientsError());
         } else if (status === "failed") {

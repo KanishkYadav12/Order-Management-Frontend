@@ -1,276 +1,173 @@
-import { serverUrl } from "@/config/config";
+import api, {
+  setAccessToken,
+  clearAccessToken,
+  getErrorMessage,
+} from "@/lib/api";
 import { authActions } from "@/redux/slices/authSlice";
-import { getActionErrorMessage } from "@/utils";
-import axios from "axios";
-import api from "@/lib/api";
-import { store } from "@/redux/store";
 
-const route = `${process.env.NEXT_PUBLIC_SERVER_URL}/auth`;
+/**
+ * Auth thunks.
+ *
+ * Every request now goes through the shared client with a relative path, so
+ * the Authorization header and the refresh interceptor always apply. Several
+ * of these previously built absolute URLs, which bypassed the client's
+ * baseURL — and with it the auth handling.
+ *
+ * The endpoints they call also exist now: `/auth/change-password`,
+ * `/auth/send-reset-password-email` and `/auth/refresh` all 404'd before.
+ */
 
-export const verifyEmail = (verifyEmailData) => async (dispatch) => {
-  console.log("action-verifyOtp-req : ", verifyEmailData);
+export const login = (credentials) => async (dispatch) => {
   try {
-    dispatch(authActions.verifyOTPRequest());
+    dispatch(authActions.loginRequest());
 
-    const response = await api.post(`${route}/verify`, verifyEmailData, {
-      headers: { "Content-Type": "application/json" },
-      withCredentials: true,
-    });
+    const { data } = await api.post("/auth/login", credentials);
+    const user = data?.data;
 
-    const { status, message, data } = response.data;
-    console.log("action-verifyOtp-res : ", data);
-
-    if (status === "success") {
-      dispatch(authActions.verifyOTPSuccess(data));
-    } else {
-      dispatch(authActions.verifyOTPFailure(message));
+    if (!user?.token) {
+      dispatch(authActions.loginFailure("Unexpected response from the server."));
+      return { ok: false };
     }
+
+    setAccessToken(user.token);
+    dispatch(authActions.loginSuccess(user));
+    return { ok: true, user };
   } catch (error) {
-    console.log("action-verifyOtp-error", error);
-    const errorMessage = getActionErrorMessage(error);
-    dispatch(authActions.verifyOTPFailure(errorMessage));
+    const code = error?.response?.data?.code;
+    dispatch(authActions.loginFailure(getErrorMessage(error)));
+    // Surfaced so the login screen can route to OTP entry rather than just
+    // showing an error the user can't act on.
+    return { ok: false, code, email: credentials?.email };
   }
 };
 
-// --- resendOtp ---
-export const resendOtp = (resendOtpData) => async (dispatch) => {
-  console.log("action-resendOtp-req : ", resendOtpData);
-  try {
-    dispatch(authActions.verifyOTPRequest());
-
-    const response = await api.post(
-      `${route}/resend-otp`,
-      { email: resendOtpData },
-      {
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true,
-      }
-    );
-
-    const { status, message, data } = response.data;
-    console.log("action-resendOtp-res : ", data);
-
-    if (status === "success") {
-      dispatch(authActions.verifyOTPSuccess(data));
-    } else {
-      dispatch(authActions.verifyOTPFailure(message));
-    }
-  } catch (error) {
-    console.log("action-resendOtp-error", error);
-    const errorMessage = getActionErrorMessage(error);
-    dispatch(authActions.verifyOTPFailure(errorMessage));
-  }
-};
-
-// --- signup ---
-export const signup = (signupData) => async (dispatch) => {
+export const signup = (payload) => async (dispatch) => {
   try {
     dispatch(authActions.signupRequest());
-
-    const response = await api.post(`${route}/signup`, signupData, {
-      headers: { "Content-Type": "application/json" },
-      withCredentials: true,
-    });
-
-    const { status, message, data } = response.data;
-
-    if (status === "success") {
-      dispatch(authActions.signupSuccess(data));
-      return true;
-    } else {
-      dispatch(authActions.signupFailure(message));
-      return false;
-    }
+    const { data } = await api.post("/auth/signup", payload);
+    dispatch(authActions.signupSuccess(data?.data));
+    return { ok: true, data: data?.data };
   } catch (error) {
-    const errorMessage = getActionErrorMessage(error);
-    dispatch(authActions.signupFailure(errorMessage));
-    return false;
+    dispatch(authActions.signupFailure(getErrorMessage(error)));
+    return { ok: false };
   }
 };
 
-// --- forgotPassword ---
-export const forgotPassword = (forgotPasswordData) => async (dispatch) => {
+export const verifyEmail = (payload) => async (dispatch) => {
   try {
-    console.log("action-forgotPassword-req : ", forgotPasswordData);
-    dispatch(authActions.forgotPasswordRequest());
-
-    const response = await api.post(
-      `${route}/send-reset-password-email`,
-      forgotPasswordData,
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-
-    console.log("action-forgot-password-res", response.data);
-    // dispatch success with response data (keeps it consistent with other actions)
-    dispatch(authActions.forgotPasswordSuccess(response.data));
-  } catch (error) {
-    // safe-guard: error.response may be undefined
-    console.log(
-      "action-forget-password-error",
-      error?.response?.data?.message ?? error.message
-    );
-    const errorMessage = getActionErrorMessage(error);
-    dispatch(authActions.forgotPasswordFailure(errorMessage));
-  }
-};
-
-// --- resetPasswordWithOTP ---
-export const resetPasswordWithOTP = (otpData) => async (dispatch) => {
-  try {
-    console.log("action-verifyOTPData-req", otpData);
     dispatch(authActions.verifyOTPRequest());
-
-    const response = await api.post(
-      `${route}/reset-password-with-otp`,
-      otpData,
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-
-    const { data } = response;
-    console.log("action-forgot-password-res", data);
+    const { data } = await api.post("/auth/verify", payload);
     dispatch(authActions.verifyOTPSuccess(data));
+    return { ok: true };
   } catch (error) {
-    console.log(
-      "action-resetPasswordWIthOtp-error",
-      error?.response?.data?.message ?? error.message
-    );
-    const errorMessage = getActionErrorMessage(error);
-    dispatch(authActions.verifyOTPFailure(errorMessage));
+    dispatch(authActions.verifyOTPFailure(getErrorMessage(error)));
+    return { ok: false };
   }
 };
 
-// --- changePassword ---
-export const changePassword = (data) => async (dispatch) => {
+export const resendOtp = (email) => async (dispatch) => {
   try {
-    console.log("action-change-password-data", data);
-    dispatch(authActions.changePasswordRequest());
-
-    const response = await api.post(`${route}/change-password`, data, {
-      headers: { "Content-Type": "application/json" },
-      withCredentials: true,
-    });
-
-    // Use response data or original payload depending on your reducer expectations.
-    // I dispatch success with response.data to be consistent with other actions.
-    dispatch(authActions.changePasswordSuccess(response.data));
+    dispatch(authActions.verifyOTPRequest());
+    const { data } = await api.post("/auth/resend-otp", { email });
+    dispatch(authActions.verifyOTPSuccess(data));
+    return { ok: true };
   } catch (error) {
-    console.log("action-change-password-error", error);
-    const errorMessage = getActionErrorMessage(error);
-    // fixed: dispatch failure on error
-    dispatch(authActions.changePasswordFailure(errorMessage));
+    dispatch(authActions.verifyOTPFailure(getErrorMessage(error)));
+    return { ok: false };
+  }
+};
+
+export const forgotPassword = (payload) => async (dispatch) => {
+  try {
+    dispatch(authActions.forgotPasswordRequest());
+    const { data } = await api.post("/auth/forgot-password", payload);
+    dispatch(authActions.forgotPasswordSuccess(data));
+    return { ok: true };
+  } catch (error) {
+    dispatch(authActions.forgotPasswordFailure(getErrorMessage(error)));
+    return { ok: false };
+  }
+};
+
+export const resetPassword = ({ token, password }) => async (dispatch) => {
+  try {
+    dispatch(authActions.resetPasswordRequest());
+    const { data } = await api.post(`/auth/reset-password/${token}`, {
+      password,
+    });
+    dispatch(authActions.resetPasswordSuccess(data));
+    return { ok: true };
+  } catch (error) {
+    dispatch(authActions.resetPasswordFailure(getErrorMessage(error)));
+    return { ok: false };
+  }
+};
+
+export const changePassword = (payload) => async (dispatch) => {
+  try {
+    dispatch(authActions.changePasswordRequest());
+    const { data } = await api.post("/auth/change-password", payload);
+
+    // Changing a password invalidates every session, so the server hands
+    // back a fresh pair to keep the current tab signed in.
+    const token = data?.data?.token;
+    if (token) setAccessToken(token);
+
+    dispatch(authActions.changePasswordSuccess(data));
+    return { ok: true };
+  } catch (error) {
+    dispatch(authActions.changePasswordFailure(getErrorMessage(error)));
+    return { ok: false };
   }
 };
 
 export const getUser = () => async (dispatch) => {
   try {
-    console.log(
-      "getUser request to:",
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/users/profile`
-    );
     dispatch(authActions.getUserRequest());
-
-    const response = await api.get("/users/profile");
-
-    const { status, message, data: responseData } = response.data;
-    console.log("action-get-user-res:", responseData);
-    dispatch(authActions.getUserSuccess(responseData));
+    const { data } = await api.get("/users/profile");
+    dispatch(authActions.getUserSuccess(data?.data));
+    return { ok: true, user: data?.data?.user };
   } catch (error) {
-    console.log("getUser error:", error.response?.data || error.message);
-    console.log("Full error:", error); // See full error details
-
-    const errorMessage = getActionErrorMessage(error); // Use your existing helper
-    dispatch(authActions.getUserFailure(errorMessage));
+    dispatch(authActions.getUserFailure(getErrorMessage(error)));
+    return { ok: false };
   }
 };
 
-export const login = (loginData) => async (dispatch) => {
+/**
+ * Restores a session on page load by exchanging the httpOnly refresh cookie
+ * for a new access token. Failure is expected and silent — it just means the
+ * visitor is signed out.
+ */
+export const restoreSession = () => async (dispatch) => {
   try {
-    dispatch(authActions.loginRequest());
-    console.log("🔐 ========== LOGIN ACTION ==========");
-    console.log(
-      "🔐 Login request to:",
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/auth/login`
-    );
+    const { data } = await api.post("/auth/refresh");
+    const user = data?.data;
+    if (!user?.token) throw new Error("no token");
 
-    const response = await api.post("/auth/login", loginData, {
-      headers: { "Content-Type": "application/json" },
-    });
-
-    const { status, message, data } = response.data;
-    console.log("✅ Login response:", response.data);
-
-    if (status === "success" && data) {
-      const token = data.token ?? data.accessToken ?? null;
-
-      console.log(
-        "🔑 Token from backend:",
-        token ? `${token.substring(0, 30)}...` : "❌ NO TOKEN"
-      );
-
-      if (typeof window !== "undefined" && token) {
-        localStorage.setItem("accessToken", token);
-        const savedToken = localStorage.getItem("accessToken");
-        console.log(
-          "💾 Token saved to localStorage:",
-          savedToken ? "✅ YES" : "❌ NO"
-        );
-      }
-
-      dispatch(
-        authActions.loginSuccess({
-          id: data.id,
-          name: data.name,
-          role: data.role,
-          email: data.email,
-          token,
-        })
-      );
-
-      console.log("✅ loginSuccess dispatched with token");
-
-      // Verify it's in Redux
-      const state = store.getState();
-      console.log(
-        "📦 Token in Redux after dispatch:",
-        state?.auth?.authDetails?.token ? "✅ YES" : "❌ NO"
-      );
-      console.log("🔐 ===================================");
-
-      return true;
-    } else {
-      dispatch(authActions.loginFailure(message || "Login failed"));
-      return false;
-    }
-  } catch (error) {
-    console.log("❌ Login error:", error.response?.data || error.message);
-    const errorMessage = getActionErrorMessage(error);
-    dispatch(authActions.loginFailure(errorMessage));
-    return false;
+    setAccessToken(user.token);
+    dispatch(authActions.sessionRestored(user));
+    dispatch(getUser());
+    return { ok: true };
+  } catch {
+    clearAccessToken();
+    dispatch(authActions.bootstrapFinished());
+    return { ok: false };
   }
 };
 
-export const logout = () => async (dispatch) => {
-  try {
+export const logout =
+  ({ allDevices = false } = {}) =>
+  async (dispatch) => {
     dispatch(authActions.logoutRequest());
-    // Clear local storage
-    localStorage.clear();
-
-    // Clear Redux state (optional, if you have a reset action)
-    dispatch(authActions.clearAuthState()); // Replace with your actual Redux reset action if needed
-
-    // Reload the page to ensure all states are cleared
-    dispatch(authActions.logoutSuccess());
-    window.location.href = "/";
-
-    return true;
-  } catch (error) {
-    console.error("Logout error:", error);
-    const errorMessage = getActionErrorMessage(error);
-    dispatch(authActions.logoutFailure(errorMessage));
-    return false;
-  }
-};
+    try {
+      // Best-effort: the server drops the refresh session, but the client
+      // must end up signed out regardless of whether that call succeeds.
+      await api.post("/auth/logout", { allDevices });
+    } catch {
+      // Intentionally ignored.
+    } finally {
+      clearAccessToken();
+      dispatch(authActions.logoutSuccess());
+    }
+    return { ok: true };
+  };

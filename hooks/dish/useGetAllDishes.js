@@ -29,11 +29,6 @@ export const useGetAllDishes = (type = "dish") => {
         } else if (status === "success") {
             setLoading(false);
             setRefresh && setRefresh(false);
-            toast({
-                title: "Success",
-                description: "Dishes fetched successfully.",
-                variant: "success",
-            });
             dispatch(dishActions.clearGetAllDishesStatus());
             dispatch(dishActions.clearGetAllDishesError());
         } else if (status === "failed") {

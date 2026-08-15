@@ -30,11 +30,6 @@ export const useGetAllOwners = (params = {}) => {
     } else if (status === "success") {
       setLoading(false);
       setRefresh && setRefresh(false);
-      toast({
-        title: "Success",
-        description: "Hotel Owners fetched successfully.",
-        variant: "success",
-      });
       dispatch(ownerActions.clearGetAllOwnersStatus());
       dispatch(ownerActions.clearGetAllOwnersError());
     } else if (status === "failed") {

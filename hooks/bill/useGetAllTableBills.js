@@ -30,11 +30,6 @@ export const useGetAllBills = (params = {}) => {
         } else if (status === "success") {
             setLoading(false);
             setRefresh && setRefresh(false);
-            toast({
-                title: "Success",
-                description: "Bills fetched successfully.",
-                variant: "success",
-            });
             dispatch(billActions.clearGetAllBillsStatus());
             dispatch(billActions.clearGetAllBillsError());
         } else if (status === "failed") {

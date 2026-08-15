@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,9 +9,8 @@ import { useGetAllDishes } from "@/hooks/dish/useGetAllDishes";
 import { Spinner } from "@/components/ui/spinner";
 
 export default function DishesPage() {
-  const {dishes : myDishes , loading} = useGetAllDishes();
+  const { dishes: myDishes, loading } = useGetAllDishes();
   console.log("my dishes ", myDishes);
-  
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -22,7 +20,6 @@ export default function DishesPage() {
     setSelectedDish(dish);
     setIsEditDialogOpen(true);
   };
-
 
   return (
     <div className="p-6">
@@ -37,27 +34,24 @@ export default function DishesPage() {
           onClick={() => setIsAddDialogOpen(true)}
           className="flex items-center gap-2"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="w-4 h-4" />
           Add Dish
         </Button>
       </div>
 
-      {loading && <Spinner/> }
+      {loading && <Spinner />}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4">
         {myDishes?.map((dish) => (
-          <DishCard 
-            key={dish._id} 
-            dish={dish} 
+          <DishCard
+            key={dish._id}
+            dish={dish}
             onEdit={() => handleEdit(dish)}
           />
         ))}
       </div>
 
-      <AddDishDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-      />
+      <AddDishDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
 
       <EditDishDialog
         open={isEditDialogOpen}

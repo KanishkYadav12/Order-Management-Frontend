@@ -14,11 +14,6 @@ export const useFetchHotelOwners = () => {
             setLoading(true);
         } else if (status === "success") {
             setLoading(false);
-            toast({
-                title: "Success",
-                description: "Hotel Owners fetched successfully.",
-                variant: "success",
-            });
         } else if (status === "failed") {
             setLoading(false);
             toast({

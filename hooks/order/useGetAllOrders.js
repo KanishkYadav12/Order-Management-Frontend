@@ -26,13 +26,26 @@ export const useGetAllOrders = (type="order", params = {}) => {
         }
     }, [dispatch, type]);
 
-    // Initial fetch and refresh handling
+    /**
+     * Fetch on mount, every mount.
+     *
+     * The guard was `if (refresh || !data)`, so once anything had been loaded
+     * into the store the board never asked again. Settling a bill deletes that
+     * table's orders server-side, but navigating back from the bill screen
+     * re-rendered the cached buckets — so a paid order sat in "Served" until a
+     * hard reload, and the floor and the board disagreed about who was seated.
+     */
     useEffect(() => {
-        if (refresh || !data ) {
-            if(setRefresh) setRefresh(false);
+        fetchAllOrders();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fetchAllOrders]);
+
+    useEffect(() => {
+        if (refresh) {
+            if (setRefresh) setRefresh(false);
             fetchAllOrders();
         }
-    }, [fetchAllOrders, data, refresh]);
+    }, [refresh, fetchAllOrders, setRefresh]);
 
     // Status handling
     useEffect(() => {

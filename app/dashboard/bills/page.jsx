@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useBills } from "@/hooks/bill/useBills";
 import { useDebounce } from "@/hooks/useDebounce";
-import { formatMoney, formatDateTime, formatNumber } from "@/lib/format";
+import { formatMoney, formatDate, formatDateTime, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const STATUSES = [
@@ -37,41 +37,72 @@ const STATUSES = [
   { value: "void", label: "Void" },
 ];
 
-/** Presets beat a date picker for the question people actually ask. */
-const RANGES = [
-  { id: "all", label: "All time", days: null },
-  { id: "today", label: "Today", days: 0 },
-  { id: "7d", label: "7 days", days: 7 },
-  { id: "30d", label: "30 days", days: 30 },
+/**
+ * How the period is chosen.
+ *
+ * Rolling windows ("last 30 days") answer a different question from the one
+ * this screen is usually asked: takings for a *named* day, or a *named* month,
+ * which is what gets reconciled against a cash drawer or handed to an
+ * accountant. All three modes still resolve to the same from/to pair the API
+ * already accepts.
+ */
+const MODES = [
+  { id: "day", label: "Day" },
+  { id: "month", label: "Month" },
+  { id: "range", label: "Range" },
+  { id: "all", label: "All" },
 ];
 
-const startOfRange = (days) => {
-  if (days === null) return undefined;
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() - days);
-  return date.toISOString();
+const isoDay = (date) => {
+  const local = new Date(date);
+  local.setMinutes(local.getMinutes() - local.getTimezoneOffset());
+  return local.toISOString().slice(0, 10);
+};
+
+const isoMonth = (date) => isoDay(date).slice(0, 7);
+
+/** Inclusive bounds, so a bill settled at 23:59 still counts for that day. */
+const startOf = (value) => `${value}T00:00:00.000`;
+const endOfDay = (value) => `${value}T23:59:59.999`;
+
+const endOfMonth = (value) => {
+  const [year, month] = value.split("-").map(Number);
+  // Day 0 of the next month is the last day of this one, leap years included.
+  const last = new Date(year, month, 0).getDate();
+  return endOfDay(`${value}-${String(last).padStart(2, "0")}`);
 };
 
 export default function BillsPage() {
   const router = useRouter();
 
   const [status, setStatus] = useState("");
-  const [range, setRange] = useState("all");
+  const [mode, setMode] = useState("all");
+  const [day, setDay] = useState(() => isoDay(new Date()));
+  const [month, setMonth] = useState(() => isoMonth(new Date()));
+  const [fromDate, setFromDate] = useState(() => isoDay(new Date()));
+  const [toDate, setToDate] = useState(() => isoDay(new Date()));
   const [term, setTerm] = useState("");
   const [page, setPage] = useState(1);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
   const search = useDebounce(term, 350);
-  const from = useMemo(
-    () => startOfRange(RANGES.find((r) => r.id === range)?.days ?? null),
-    [range]
-  );
 
-  const { bills, pagination, loading, error, refetch, remove } = useBills({
+  const { from, to } = useMemo(() => {
+    if (mode === "day") return { from: startOf(day), to: endOfDay(day) };
+    if (mode === "month") return { from: startOf(`${month}-01`), to: endOfMonth(month) };
+    if (mode === "range") {
+      // Tolerate the dates being picked in either order.
+      const [a, b] = fromDate <= toDate ? [fromDate, toDate] : [toDate, fromDate];
+      return { from: startOf(a), to: endOfDay(b) };
+    }
+    return { from: undefined, to: undefined };
+  }, [mode, day, month, fromDate, toDate]);
+
+  const { bills, pagination, totals, loading, error, refetch, remove } = useBills({
     status,
     from,
+    to,
     search,
     page,
   });
@@ -82,13 +113,14 @@ export default function BillsPage() {
     setPage(1);
   };
 
-  const takings = useMemo(
-    () =>
-      bills
-        .filter((bill) => bill.status === "paid")
-        .reduce((sum, bill) => sum + (bill.finalAmount ?? 0), 0),
-    [bills]
-  );
+  const periodLabel =
+    mode === "day"
+      ? `on ${formatDate(day)}`
+      : mode === "month"
+        ? `in ${new Date(`${month}-01`).toLocaleString("en-IN", { month: "long", year: "numeric" })}`
+        : mode === "range"
+          ? `between ${formatDate(fromDate)} and ${formatDate(toDate)}`
+          : "in total";
 
   const confirmDelete = async () => {
     if (!pendingDelete) return;
@@ -106,8 +138,7 @@ export default function BillsPage() {
           <p className="text-sm text-muted-foreground">
             {loading
               ? "Loading…"
-              : `${formatNumber(pagination.total)} bill${pagination.total === 1 ? "" : "s"}` +
-                (takings > 0 ? ` · ${formatMoney(takings)} settled on this page` : "")}
+              : `${formatNumber(pagination.total)} bill${pagination.total === 1 ? "" : "s"} ${periodLabel}`}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={refetch} className="gap-1.5">
@@ -157,14 +188,14 @@ export default function BillsPage() {
         </div>
 
         <div className="flex rounded-lg border p-0.5">
-          {RANGES.map((option) => (
+          {MODES.map((option) => (
             <button
               key={option.id}
               type="button"
-              onClick={() => applyFilter(setRange)(option.id)}
+              onClick={() => applyFilter(setMode)(option.id)}
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                range === option.id
+                mode === option.id
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
@@ -173,7 +204,91 @@ export default function BillsPage() {
             </button>
           ))}
         </div>
+
+        {/* Only the input the chosen mode needs. Native date/month controls
+            bring the platform's own picker, including the mobile one. */}
+        {mode === "day" && (
+          <Input
+            type="date"
+            value={day}
+            max={isoDay(new Date())}
+            onChange={(event) => applyFilter(setDay)(event.target.value)}
+            className="w-auto"
+            aria-label="Day"
+          />
+        )}
+
+        {mode === "month" && (
+          <Input
+            type="month"
+            value={month}
+            max={isoMonth(new Date())}
+            onChange={(event) => applyFilter(setMonth)(event.target.value)}
+            className="w-auto"
+            aria-label="Month"
+          />
+        )}
+
+        {mode === "range" && (
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="date"
+              value={fromDate}
+              max={isoDay(new Date())}
+              onChange={(event) => applyFilter(setFromDate)(event.target.value)}
+              className="w-auto"
+              aria-label="From"
+            />
+            <span className="text-sm text-muted-foreground">to</span>
+            <Input
+              type="date"
+              value={toDate}
+              max={isoDay(new Date())}
+              onChange={(event) => applyFilter(setToDate)(event.target.value)}
+              className="w-auto"
+              aria-label="To"
+            />
+          </div>
+        )}
       </div>
+
+      {/* What the filtered period actually took. Computed across every
+          matching bill server-side, so paging does not change the number. */}
+      {!loading && !error && pagination.total > 0 && (
+        <div className="grid gap-2 sm:grid-cols-3">
+          <div className="rounded-lg border bg-card px-4 py-3">
+            <p className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Settled
+            </p>
+            <p className="text-xl font-bold tabular">{formatMoney(totals.settled)}</p>
+            <p className="text-xs text-muted-foreground">
+              {formatNumber(totals.settledCount)} paid
+            </p>
+          </div>
+          <div className="rounded-lg border bg-card px-4 py-3">
+            <p className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Outstanding
+            </p>
+            <p className="text-xl font-bold tabular">
+              {formatMoney(totals.gross - totals.settled)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {formatNumber(totals.count - totals.settledCount)} open
+            </p>
+          </div>
+          <div className="rounded-lg border bg-card px-4 py-3">
+            <p className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Average bill
+            </p>
+            <p className="text-xl font-bold tabular">
+              {formatMoney(
+                totals.settledCount > 0 ? totals.settled / totals.settledCount : 0
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground">per settled bill</p>
+          </div>
+        </div>
+      )}
 
       {error ? (
         <ErrorState title="Couldn't load bills" description={error} onRetry={refetch} />
@@ -188,7 +303,7 @@ export default function BillsPage() {
           Icon={Receipt}
           title="No bills match that"
           description={
-            search || status || range !== "all"
+            search || status || mode !== "all"
               ? "Try widening the date range or clearing the search."
               : "Bills appear here once a table is billed from the order board."
           }

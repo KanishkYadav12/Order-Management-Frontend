@@ -4,16 +4,11 @@ import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Menu,
-  Power,
-  Wifi,
-  WifiOff,
   LogOut,
   ChevronDown,
   Sun,
   Moon,
-  Monitor,
   UserRoundCog,
-  Check,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -68,18 +63,15 @@ const useOrderChime = (count, enabled) => {
 const initials = (name = "") =>
   name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "?";
 
-const THEMES = [
-  { value: "light", label: "Light", Icon: Sun },
-  { value: "dark", label: "Dark", Icon: Moon },
-  { value: "system", label: "System", Icon: Monitor },
-];
-
 export default function TopBar({ onOpenNav, title }) {
   const dispatch = useDispatch();
   const { toast } = useToast();
   const { user, role, isSuperAdmin, hotelName } = useAuth();
   const { handleLogout, loading: loggingOut } = useLogout();
-  const { theme, setTheme } = useTheme();
+  // `resolved` collapses "system" into the light/dark actually on screen,
+  // which is what a two-way toggle needs to know which way to flip. Reading
+  // matchMedia during render instead would risk a hydration mismatch.
+  const { resolved, setTheme } = useTheme();
 
   const isSystemOnline = useSelector(selectIsSystemOnline);
   const connectionError = useSelector(selectConnectionError);
@@ -132,38 +124,80 @@ export default function TopBar({ onOpenNav, title }) {
 
       <div className="ml-auto flex items-center gap-2">
         {showsServiceControls && (
-          <>
-            {/* Icon plus word, so the state never rests on colour alone. */}
-            <span
-              className={cn(
-                "hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-2xs font-semibold sm:inline-flex",
-                connectionError
-                  ? "border-destructive/30 bg-destructive/10 text-destructive"
-                  : "border-success/30 bg-success/10 text-success"
+          /**
+           * One control, not two.
+           *
+           * There used to be a "Live" pill beside a "Taking orders" button.
+           * "Live" only ever described the websocket, so it read the same
+           * whether the kitchen was accepting orders or shut — two badges
+           * saying different things about different subjects, one word apart.
+           * Connection state is now a dot *inside* the service button, where
+           * it qualifies the claim the button is making instead of competing
+           * with it.
+           */
+          <Button
+            variant={isSystemOnline ? "outline" : "destructive"}
+            size="sm"
+            onClick={toggleSystem}
+            className="gap-2"
+            title={
+              connectionError
+                ? `Reconnecting — ${connectionError}`
+                : isSystemOnline
+                  ? "Accepting new orders. Click to pause."
+                  : "Paused. Click to start accepting orders."
+            }
+          >
+            <span className="relative flex h-2 w-2" aria-hidden="true">
+              {isSystemOnline && !connectionError && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-70" />
               )}
-              title={connectionError ?? "Live updates connected"}
-            >
-              {connectionError ? (
-                <WifiOff className="h-3 w-3" aria-hidden="true" />
-              ) : (
-                <Wifi className="h-3 w-3" aria-hidden="true" />
-              )}
-              {connectionError ? "Offline" : "Live"}
+              <span
+                className={cn(
+                  "relative inline-flex h-2 w-2 rounded-full",
+                  connectionError
+                    ? "bg-destructive"
+                    : isSystemOnline
+                      ? "bg-success"
+                      : "bg-muted-foreground"
+                )}
+              />
             </span>
 
-            <Button
-              variant={isSystemOnline ? "outline" : "destructive"}
-              size="sm"
-              onClick={toggleSystem}
-              className="gap-1.5"
-            >
-              <Power className="h-3.5 w-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">
-                {isSystemOnline ? "Taking orders" : "Paused"}
-              </span>
-            </Button>
-          </>
+            <span className="hidden sm:inline">
+              {connectionError
+                ? "Reconnecting"
+                : isSystemOnline
+                  ? "Taking orders"
+                  : "Paused"}
+            </span>
+
+            {/* Screen readers get the connection state in words, since the
+                dot carries it visually. */}
+            <span className="sr-only">
+              {connectionError
+                ? "Live updates disconnected"
+                : "Live updates connected"}
+            </span>
+          </Button>
         )}
+
+        {/* Appearance: one button, both directions. It sat in the account
+            menu, three items deep, which made a setting people flip daily
+            harder to reach than signing out. */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
+          onClick={() => setTheme(resolved === "dark" ? "light" : "dark")}
+          title={resolved === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          aria-label={
+            resolved === "dark" ? "Switch to light mode" : "Switch to dark mode"
+          }
+        >
+          <Sun className="h-[1.15rem] w-[1.15rem] rotate-0 scale-100 transition-transform duration-300 dark:-rotate-90 dark:scale-0" aria-hidden="true" />
+          <Moon className="absolute h-[1.15rem] w-[1.15rem] rotate-90 scale-0 transition-transform duration-300 dark:rotate-0 dark:scale-100" aria-hidden="true" />
+        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -191,30 +225,6 @@ export default function TopBar({ onOpenNav, title }) {
                 </span>
               )}
             </DropdownMenuLabel>
-
-            <DropdownMenuSeparator />
-
-            {/* Appearance lives here rather than in the toolbar: it's a
-                once-a-year setting, and three icon buttons sitting permanently
-                beside the service controls implied it mattered as much. */}
-            <p className="px-2 py-1.5 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Appearance
-            </p>
-            {THEMES.map(({ value, label, Icon }) => (
-              <DropdownMenuItem
-                key={value}
-                onClick={(event) => {
-                  event.preventDefault();
-                  setTheme(value);
-                }}
-              >
-                <Icon className="mr-2 h-4 w-4" aria-hidden="true" />
-                {label}
-                {theme === value && (
-                  <Check className="ml-auto h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                )}
-              </DropdownMenuItem>
-            ))}
 
             <DropdownMenuSeparator />
 

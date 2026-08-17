@@ -5,6 +5,7 @@ import api, { getErrorMessage } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
 const EMPTY_PAGINATION = { page: 1, limit: 20, total: 0, pages: 1 };
+const EMPTY_TOTALS = { gross: 0, settled: 0, settledCount: 0, count: 0 };
 
 /**
  * The bill list, filtered and paged **on the server**.
@@ -19,6 +20,9 @@ export const useBills = (filters = {}) => {
 
   const [bills, setBills] = useState([]);
   const [pagination, setPagination] = useState(EMPTY_PAGINATION);
+  // Period totals, computed server-side across every matching bill — not
+  // just the page on screen.
+  const [totals, setTotals] = useState(EMPTY_TOTALS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -45,6 +49,7 @@ export const useBills = (filters = {}) => {
       if (ticket !== requestId.current) return;
       setBills(data?.data?.bills ?? []);
       setPagination(data?.data?.pagination ?? EMPTY_PAGINATION);
+      setTotals(data?.data?.totals ?? EMPTY_TOTALS);
     } catch (err) {
       if (ticket !== requestId.current) return;
       setError(getErrorMessage(err));
@@ -78,7 +83,7 @@ export const useBills = (filters = {}) => {
     }
   };
 
-  return { bills, pagination, loading, error, refetch: load, remove };
+  return { bills, pagination, totals, loading, error, refetch: load, remove };
 };
 
 export default useBills;

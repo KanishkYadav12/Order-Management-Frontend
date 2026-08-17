@@ -73,6 +73,7 @@ const buildNav = ({ hotelId, isSuperAdmin }) => {
       },
     ],
     footer: [
+      { title: "My restaurant", icon: Building2, href: "/dashboard/hotel" },
       { title: "Settings", icon: Settings, href: "/dashboard/configuration" },
       { title: "Profile", icon: UserRoundCog, href: "/dashboard/profile" },
     ],

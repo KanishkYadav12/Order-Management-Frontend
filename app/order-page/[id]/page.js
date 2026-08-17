@@ -15,12 +15,14 @@ import {
   Loader2,
   UtensilsCrossed,
   AlertTriangle,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { useGetAllOrders } from "@/hooks/order/useGetAllOrders";
 import { updateOrderStatus } from "@/redux/actions/order/orderActions";
 import { useAuth } from "@/hooks/auth/useAuth";
+import NewOrderDialog from "@/components/orders/NewOrderDialog";
 import api, { getErrorMessage } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { formatMoney, minutesSince } from "@/lib/format";
@@ -311,6 +313,7 @@ export default function LiveOrdersPage() {
   const [refresh, setRefresh] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [billingTable, setBillingTable] = useState(null);
+  const [composing, setComposing] = useState(false);
 
   const { loading, error } = useGetAllOrders("order", { refresh, setRefresh });
   const board = useSelector((state) => state.order.getAllOrders.data);
@@ -403,20 +406,36 @@ export default function LiveOrdersPage() {
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5"
-          onClick={() => setRefresh(true)}
-          disabled={loading}
-        >
-          <RefreshCw
-            className={cn("h-3.5 w-3.5", loading && "animate-spin")}
-            aria-hidden="true"
-          />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setRefresh(true)}
+            disabled={loading}
+          >
+            <RefreshCw
+              className={cn("h-3.5 w-3.5", loading && "animate-spin")}
+              aria-hidden="true"
+            />
+            Refresh
+          </Button>
+
+          {/* Staff-side order entry. Without this the board could only ever
+              display orders a diner had started from the QR menu — a walk-in
+              or a phone order had no way in at all. */}
+          <Button size="sm" className="gap-1.5" onClick={() => setComposing(true)}>
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            New order
+          </Button>
+        </div>
       </div>
+
+      <NewOrderDialog
+        open={composing}
+        onOpenChange={setComposing}
+        onCreated={() => setRefresh(true)}
+      />
 
       {loading && !board ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -428,7 +447,9 @@ export default function LiveOrdersPage() {
         <EmptyState
           Icon={UtensilsCrossed}
           title="No live orders"
-          description="Orders placed from a table's QR code land here the moment a diner confirms them."
+          description="Orders land here when a diner confirms one from a table's QR code — or start one yourself for a walk-in."
+          action={() => setComposing(true)}
+          actionLabel="New order"
         />
       ) : (
         // Four equal columns across the full width. The board previously

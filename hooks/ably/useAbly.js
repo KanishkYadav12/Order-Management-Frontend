@@ -59,7 +59,14 @@ const useAbly = (hotelId, isSystemOnline) => {
         });
 
         if (cancelled) {
-          client.close();
+          // Same reason as the cleanup below: closing a half-open client
+          // rejects whatever it was still waiting on.
+          try {
+            client.connection.off();
+            client.close();
+          } catch {
+            // Nothing useful to do with a client we are discarding anyway.
+          }
           return;
         }
 
@@ -128,14 +135,69 @@ const useAbly = (hotelId, isSystemOnline) => {
 
     return () => {
       cancelled = true;
-      channelRef.current?.unsubscribe();
+
+      const client = clientRef.current;
+      const channel = channelRef.current;
       channelRef.current = null;
+      clientRef.current = null;
+
+      /**
+       * Unsubscribe only — never detach.
+       *
+       * `subscribe()` attaches the channel asynchronously, and in development
+       * React unmounts the effect while that attach is still in flight.
+       * Detaching then cancels it, and Ably reports the cancellation to the
+       * channel's state listeners as "Attach request superseded by a
+       * subsequent detach request". `client.close()` below tears every channel
+       * down anyway, so the detach bought nothing and cost an error.
+       *
+       * `off()` first, so a channel that errors on the way out has no listener
+       * left to surface it.
+       */
       try {
-        clientRef.current?.close();
+        channel?.off?.();
+        channel?.unsubscribe();
+      } catch {
+        // A channel that never attached has nothing to clean up.
+      }
+
+      if (!client) return;
+
+      /**
+       * Closing is noisy if you just call close().
+       *
+       * `close()` drives the connection to `closed`, and Ably reports that
+       * transition by constructing an ErrorInfo ("Connection closed") which it
+       * hands to every state listener and to any operation still in flight.
+       * In development React mounts, unmounts and remounts effects, so the
+       * cleanup routinely fires while `connect()` is still awaiting its token
+       * — the pending request then rejects with that ErrorInfo, nothing is
+       * listening, and Next's overlay shows it as a runtime error.
+       *
+       * So: drop our listeners first, absorb whatever the closure emits, and
+       * skip the call entirely if the connection is already on its way out.
+       */
+      try {
+        client.connection.off();
+      } catch {
+        // No listeners to remove.
+      }
+
+      try {
+        client.connection.on("failed", () => {});
+        client.connection.on("closed", () => {});
+      } catch {
+        // Best effort — the sinks only exist to keep the close quiet.
+      }
+
+      const state = client.connection?.state;
+      if (state === "closed" || state === "closing") return;
+
+      try {
+        client.close();
       } catch {
         // Closing an already-closed client is harmless.
       }
-      clientRef.current = null;
     };
   }, [hotelId, isSystemOnline, dispatch]);
 

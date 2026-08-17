@@ -16,12 +16,14 @@ import {
   Armchair,
   Wallet,
   Minus,
+  Plus,
 } from "lucide-react";
 import { useFetchDashboard } from "@/hooks/dashboard/useFetchDashboard";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { ErrorState } from "@/components/ui/empty-state";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
 import { Button } from "@/components/ui/button";
+import NewOrderDialog from "@/components/orders/NewOrderDialog";
 import { cn } from "@/lib/utils";
 import {
   formatMoneyShort,
@@ -129,6 +131,7 @@ function KitchenTile({ label, count, Icon, tone }) {
 
 export default function DashboardPage() {
   const [rangeId, setRangeId] = useState("30d");
+  const [composing, setComposing] = useState(false);
   const { user, hotelName } = useAuth();
 
   const range = useMemo(() => {
@@ -229,13 +232,23 @@ export default function DashboardPage() {
               </span>
             )}
           </div>
-          <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
-            <Link href={ordersHref}>
-              Open kitchen board
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            {/* Taking an order is the most frequent thing anyone does here, so
+                it belongs on the first screen rather than two clicks away. */}
+            <Button size="sm" className="h-8 gap-1.5" onClick={() => setComposing(true)}>
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              New order
+            </Button>
+            <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
+              <Link href={ordersHref}>
+                Open kitchen board
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+            </Button>
+          </div>
         </div>
+
+        <NewOrderDialog open={composing} onOpenChange={setComposing} />
 
         {loading ? (
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">

@@ -13,6 +13,7 @@ import SelectMultiple from "@/components/dishes/component/SectMultiple";
 import SelectOne from "@/components/dishes/component/SelectOne";
 import { Switch } from "@/components/ui/switch"; // Switch for toggle buttons
 import { WhiteLoadingSpinner } from "@/components/ui/WhiteLoadingSpinner";
+import DishFactsPanel from "@/components/ai/DishFactsPanel";
 
 function DishDetails() {
   const { id } = useParams();
@@ -156,6 +157,11 @@ function DishDetails() {
               type="offer"
             />
           </div>
+        </div>
+
+        {/* The diner-facing write-up for this dish. */}
+        <div className="col-span-12">
+          <DishFactsPanel dishId={id} />
         </div>
 
         {/* Footer */}

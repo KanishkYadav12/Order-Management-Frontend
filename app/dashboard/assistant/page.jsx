@@ -18,6 +18,7 @@ import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { useAssistant, useAiStatus, useReport } from "@/hooks/ai/useAssistant";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import AdvisorChat from "@/components/ai/AdvisorChat";
 
 const SUGGESTIONS = [
   "Which dishes should I take off the menu?",
@@ -438,7 +439,8 @@ export default function AssistantPage() {
           Insights
         </h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Everything here is calculated from your own sales — no guesswork.
+          Your advisor knows this restaurant's numbers, the calendar and the
+          local news. Every figure it quotes is computed from your own records.
         </p>
       </div>
 
@@ -488,9 +490,7 @@ export default function AssistantPage() {
         ))}
       </div>
 
-      {tab === "chat" && (
-        <Chat enabled={status?.enabled} provider={status?.provider} />
-      )}
+      {tab === "chat" && <AdvisorChat enabled={status?.enabled} />}
       {tab === "menu" && <MenuBoard />}
       {tab === "forecast" && <ForecastBoard />}
       {tab === "pairings" && <PairingsBoard />}
